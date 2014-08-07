@@ -3,7 +3,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <vector>
-#include <queue>
+#include <list>
 #include <map>
 #include <limits>
 #include "node.h"
@@ -12,12 +12,22 @@ using std::cout;
 using std::cerr;
 using std::endl;
 using std::cin;
-using std::vector;
-using std::queue;
+using std::list;
 using std::map;
 using std::pair;
 using std::begin;
 using std::end;
+
+void removeInferiorNode(list<Node> &q, const multiset<int> &depts)
+{
+  for(list<Node>::iterator i = begin(q);
+      i != end(q); i++){
+    if(i->getDepts() == depts){
+      i = q.erase(i);
+      i--;
+    }
+  }
+}
 
 vector<int> computeCenter(const vector<vector<int> > &choices)
 {
@@ -45,7 +55,7 @@ double computeDistance(vector<int> a, vector<int> b)
 
   double dist = 0;
   for(int i = 0; i < (int)a.size(); i++){
-    dist = (a.at(i) - b.at(i)) * (a.at(i) - b.at(i));
+    dist += (a.at(i) - b.at(i)) * (a.at(i) - b.at(i));
   }
   dist /= a.size();
   return dist;
@@ -53,18 +63,19 @@ double computeDistance(vector<int> a, vector<int> b)
 
 pair<int, vector<int> >
 getNearestVector(const vector<int> &center,
-			     const vector<vector<int> > &choices)
+		 vector<vector<int> >::const_iterator b,
+		 vector<vector<int> >::const_iterator e)
 {
   pair<int, vector<int> > target_info;
   target_info.second.resize(center.size());
 
   double dist = std::numeric_limits<double>::max();
-  for(vector<vector<int> >::const_iterator i = begin(choices);
-      i != end(choices); i++){
+  for(vector<vector<int> >::const_iterator i = b;
+      i != e; i++){
     double tmp_dist = computeDistance(*i, center);
     if(tmp_dist < dist){
       dist = tmp_dist;      
-      target_info.first = distance(begin(choices), i);
+      target_info.first = distance(b, i);
       target_info.second = *i;
     }
   }
@@ -147,10 +158,15 @@ int main(int argc, char** args)
   showVector(capacity);
 
   vector<vector<int> > choices(NUM_PEOPLE);
+  vector<int> choicesID(NUM_PEOPLE);
 
   for(vector<vector<int> >::iterator i = begin(choices);
       i != end(choices); i++){
     i->resize(NUM_DEPT);
+  }
+
+  for(int i = 0; i < NUM_PEOPLE; i++){
+    choicesID.at(i) = i;
   }
 
   // for(int i = 0; i < (int)choices.size(); i++){
@@ -176,50 +192,52 @@ int main(int argc, char** args)
   cout << "center:" << endl;
   showVector(center);
 
-  // 幅優先探索のためのqueueに空のルートノード(深さ0)を入れる
+  // 枝狩り幅優先探索のためのlistに空のルートノード(深さ0)を入れる
   Node root(0);
-  queue<Node> q;
-  q.push(root);
+  list<Node> q;
+  q.push_back(root);
 
   // これまでに選択した部署の集合をキーとし、スコアをバリューとしたマップ
   map<multiset<int>, int> score_table;
 
-  multiset<int> a, b;
-  a.insert(10); b.insert(10);
-  assert(a == b);
-  b.insert(11);
-  assert(a != b);
-  multiset<int> c;
-  c.insert(10); 
-  
+  // multiset<int> a, b;
+  // a.insert(10); b.insert(10);
+  // assert(a == b);
+  // b.insert(11);
+  // assert(a != b);
+  // multiset<int> c;
+  // c.insert(10);
+  // c.insert(11);
+  // assert(b == c);
+  // c.erase(11);
+  // assert(a == c);
   
 
-  cout << "Algorithm start!" << endl;
+  cout << "Algorithm start!" << endl;  
   
   // 探索深さdが人数より小さい間
   for(int d = 0; d < NUM_PEOPLE; d++)
   {
-    // これから注目するベクトル
-    vector<int> target(NUM_DEPT);
-    // // これまでに選択したベクトルの数が0なら
-    // if(d == 0){
-    
+    cout << endl;
+    cout << "depth : " << d << endl;
     // 全志望度ベクトルの重心に最も近い志望度ベクトルを選ぶ
     pair<int, vector<int> > targetInfo
-      = getNearestVector(center, choices);    
-    target = targetInfo.second;
-    
-    // }else{
-    //   // これまでに選択したベクトルの重心に最も近い志望度ベクトルを選ぶ
-    // }
+      = getNearestVector(center, begin(choices) + d, end(choices));
+    // これから注目するベクトル
+    vector<int> target = targetInfo.second;
 
     // 選択したベクトルをchoicesから削除
-    choices.erase(begin(choices) + targetInfo.first);
+    // choices.erase(begin(choices) + targetInfo.first);
+    std::swap(choices.at(d), choices.at(d + targetInfo.first));
+    std::swap(choicesID.at(d), choicesID.at(d + targetInfo.first));
 
-    // queueが空でなく、かつ先頭要素の深さがdである間
-    if(!q.empty() && q.front().getDepth() == d){
+    cout << choicesID.at(d) << " : ";
+    showVector(target);
+
+    // listが空でなく、かつ先頭要素の深さがdである間
+    while(!q.empty() && q.front().getDepth() == d){
       Node node = q.front();
-      q.pop();
+      q.erase(begin(q));
       for(int i = 0; i < NUM_DEPT; i++){
 	// 部署iがすでに定員に達していたら
 	if(node.getNumDept(i) == capacity.at(i)){
@@ -230,30 +248,71 @@ int main(int argc, char** args)
 	newNode.incrementDepth();
 	// 現在注目している人がi番目の部署を選んだという情報を新規ノードに加える
 	newNode.addDept(i);
-	// もしこれまでに選択された部署の集合が未登録、
-	// または既存のものよりスコアが高い場合は登録
-	if(score_table.find(newNode.getDepts()) == end(score_table)
-	   || score_table[newNode.getDepts()]
-	   < score_table[node.getDepts()] + choices.at(d).at(i))
-	{
+	
+	// もしこれまでに選択された部署の集合が未登録なら登録	
+	if(score_table.find(newNode.getDepts()) == end(score_table)){
+	  // 履歴を更新
+	  newNode.addHistory(i);
 	  // 自分が持つ部署集合のスコアを記録
-	  score_table[newNode.getDepts()]
-	    = score_table[node.getDepts()] + choices.at(d).at(i);
-	  // 新規ノードをqueueに入れる
-	  q.push(newNode);
+	  // cout << "i : " << i << endl;
+	  cout << "new : ";
+	  showVector(newNode.getHistory());
+
+	  if(node.getDepts().empty()){
+	    score_table[newNode.getDepts()] = target.at(i);
+	  }else{
+	    score_table[newNode.getDepts()]
+	      = score_table[node.getDepts()] + target.at(i);
+	  }
+	  newNode.setScore(score_table[newNode.getDepts()]);
+	  cout << "new score: " << newNode.getScore() << endl;
+	  // 新規ノードをlistに入れる
+	  q.push_back(newNode);
 	}
+	// 既存のものよりスコアが高い場合は登録	  
+	else if(score_table[newNode.getDepts()]
+		< score_table[node.getDepts()] + target.at(i)){
+	  // 履歴を更新
+	  newNode.addHistory(i);
+	  // 自分が持つ部署集合のスコアを記録
+	  // cout << "i : " << i << endl;
+	  cout << "upd : ";
+	  showVector(newNode.getHistory());
+	  score_table[newNode.getDepts()]
+	    = score_table[node.getDepts()] + target.at(i);
+	  newNode.setScore(score_table[newNode.getDepts()]);
+	  cout << "upd score: " << newNode.getScore() << endl;
+	  // 古いノードを削除し、新規ノードをlistに入れる
+	  removeInferiorNode(q, newNode.getDepts());
+	  q.push_back(newNode);
+	}// else{
+	//   cout << "i : " << i << " bad" << endl;
+	// }
       }
     }   
   }
 
   // 最もスコアの高いノードを探す
-  // どうしよう？
-
-  for(int i = 0; i < NUM_PEOPLE; i++){
-    // 各人の配属先を表示
+  int score = std::numeric_limits<int>::min();
+  vector<int> result;
+  while(!q.empty()){
+    Node node = q.front();
+    q.erase(begin(q));    
+    if(score < node.getScore()){
+      score = node.getScore();
+      result = node.getHistory();
+    }
   }
+
+  cout << "IDs :" << endl;
+  showVector(choicesID);
+  cout << "history :" << endl;
+  showVector(result);
+
   // 空行を挿入
+  cout << endl;
   // 全体の幸福度を表示
+  cout << "total happiness: " << score << endl;
 
   return 0;
 }
