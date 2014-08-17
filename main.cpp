@@ -196,14 +196,18 @@ int main(int argc, char** argv)
   defaultSettings(tmp_NUM_CHOICES, scores);  
   
   int opt;
+  bool verbose = false;
   char inputFileName[100];
   // getoptの返り値は見付けたオプション
-  while((opt = getopt(argc, argv, "hi:s:"))!=-1){
+  while((opt = getopt(argc, argv, "hvi:s:"))!=-1){
     switch(opt){
       // 値をとらないオプション
     case 'h':          
       cout << "Have a nice day!" << endl;
       exit(0);
+    case 'v':
+      verbose = true;
+      break;
       
       // 値を取る引数の場合は外部変数optargにその値を格納する
     case 'i':
@@ -356,8 +360,10 @@ int main(int argc, char** argv)
   // 探索深さdが人数より小さい間
   for(int d = 0; d < NUM_PEOPLE; d++)
   {
-    cout << endl;
-    cout << "depth : " << d << endl;
+    if(verbose){
+      cout << endl;    
+      cout << "depth : " << d << endl;
+    }
     // 全志望度ベクトルの重心に最も近い志望度ベクトルを選ぶ
     pair<int, vector<int> > targetInfo
       = getNearestVector(center, begin(choices) + d, end(choices));
@@ -369,8 +375,10 @@ int main(int argc, char** argv)
     swap(choices.at(d), choices.at(d + targetInfo.first));
     swap(choicesID.at(d), choicesID.at(d + targetInfo.first));
 
-    cout << choicesID.at(d) << " : ";
-    showVector(target);
+    if(verbose){
+      cout << choicesID.at(d) << " : ";
+      showVector(target);
+    }
 
     // listが空でなく、かつ先頭要素の深さがdである間
     while(!q.empty() && q.front().getDepth() == d){
@@ -393,8 +401,10 @@ int main(int argc, char** argv)
 	  newNode.addHistory(i);
 	  // 自分が持つ部署集合のスコアを記録
 	  // cout << "i : " << i << endl;
-	  cout << "new : ";
-	  showVector(newNode.getHistory());
+	  if(verbose){
+	    cout << "new : ";
+	    showVector(newNode.getHistory());
+	  }
 
 	  if(node.getDepts().empty()){
 	    score_table[newNode.getDepts()] = target.at(i);
@@ -403,7 +413,9 @@ int main(int argc, char** argv)
 	      = score_table[node.getDepts()] + target.at(i);
 	  }
 	  newNode.setScore(score_table[newNode.getDepts()]);
-	  cout << "new score: " << newNode.getScore() << endl;
+	  if(verbose){
+	    cout << "new score: " << newNode.getScore() << endl;
+	  }
 	  // 新規ノードをlistに入れる
 	  q.push_back(newNode);
 	}
@@ -414,12 +426,16 @@ int main(int argc, char** argv)
 	  newNode.addHistory(i);
 	  // 自分が持つ部署集合のスコアを記録
 	  // cout << "i : " << i << endl;
-	  cout << "upd : ";
-	  showVector(newNode.getHistory());
+	  if(verbose){
+	    cout << "upd : ";
+	    showVector(newNode.getHistory());
+	  }
 	  score_table[newNode.getDepts()]
 	    = score_table[node.getDepts()] + target.at(i);
 	  newNode.setScore(score_table[newNode.getDepts()]);
-	  cout << "upd score: " << newNode.getScore() << endl;
+	  if(verbose){
+	    cout << "upd score: " << newNode.getScore() << endl;
+	  }
 	  // 古いノードを削除し、新規ノードをlistに入れる
 	  removeInferiorNode(q, newNode.getDepts());
 	  q.push_back(newNode);
