@@ -31,6 +31,8 @@ using std::string;
 using std::stoi;
 using std::ifstream;
 
+
+
 void removeInferiorNode(list<Node> &q, const multiset<int> &depts)
 {
   for(list<Node>::iterator i = begin(q);
@@ -107,6 +109,15 @@ void showVector(const vector<int> &v)
       cout << endl;
     }
   }
+}
+
+int sum(vector<int>::const_iterator b, vector<int>::const_iterator e)
+{
+  int sum = 0;
+  for(vector<int>::const_iterator i = b; i != e; i++){
+    sum += *i;
+  }
+  return sum;
 }
 
 void defaultSettings(int &tmp_NUM_CHOICES, vector<int> &scores)
@@ -234,6 +245,12 @@ int main(int argc, char** argv)
   }
   cout << "capacity:" << endl;
   showVector(capacity);
+
+  // 部署の定員の総和が人数になっているかチェック
+  if(sum(begin(capacity), end(capacity)) != NUM_PEOPLE){
+    cerr << "Summation of capacities of all department must be equal to the number of people." << endl;
+    exit(1);
+  }  
 
   // 志望度ベクトルの定義と初期化
   vector<vector<int> > choices(NUM_PEOPLE);
