@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include <iostream>
 #include <string>
@@ -14,6 +15,12 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
+#include <boost/accumulators/statistics/min.hpp>
+#include <boost/accumulators/statistics/max.hpp>
+#include <boost/accumulators/statistics/variance.hpp>
+
 
 #include "node.h"
 
@@ -31,19 +38,73 @@ using std::ifstream;
 using std::swap;
 using std::iter_swap;
 
+using namespace boost::accumulators;
 
 
-void removeInferiorNode(list<Node> &q, const multiset<int> &depts)
+double getStdDev(const list<Node> q)
 {
+  assert(!q.empty());
+  accumulator_set<int, stats<tag::variance> > acc;
+  BOOST_FOREACH(Node n, q) {    
+    acc(n.getScore());
+  }
+  return sqrt(variance(acc));
+}
+
+double getMean(const list<Node> q)
+{
+  assert(!q.empty());
+  accumulator_set<int, stats<tag::variance> > acc;
+  BOOST_FOREACH(Node n, q) {    
+    acc(n.getScore());
+  }
+  return mean(acc);
+}
+
+void rmInferiorNodes(list<Node> &q, map<multiset<int>, int> score_table)
+{
+  assert(!q.empty());
   for(list<Node>::iterator i = begin(q);
       i != end(q); i++){
-    if(i->getDepts() == depts){
-      // i = q.erase(i);
-      q.erase(i);
-      break;
-      // i--;
+    if(i->getScore() < score_table[i->getDepts()]){
+      i = q.erase(i);
+      i--;
     }
   }
+}
+
+double getCutOffLowerBound(double mean, double sd, int d, int n)
+{
+  assert(n != 1);
+  // return mean - sd * ((double)n / (d + 1) + n - 2) / (n - 1);
+  return mean - 2.0 * sd / (d + 1);
+}
+
+// 望みのないノードを削除
+void rmHopelessNodes(list<Node> &q, int d, int n)
+{
+  assert(!q.empty());
+
+  cout << "d, q: " << d << ", " << q.size() << endl;  
+  accumulator_set<int, stats<tag::variance> > acc;
+  BOOST_FOREACH(Node n, q) {    
+    acc(n.getScore());
+  }
+  
+  double mn = mean(acc);
+  double sd = sqrt(variance(acc));
+  double cutOff = getCutOffLowerBound(mn, sd, d, n);
+
+  int rm = 0;
+  for(list<Node>::iterator i = begin(q);
+      i != end(q); i++){
+    if(i->getScore() < cutOff){
+      i = q.erase(i);
+      i--;
+      rm++;      
+    }
+  }
+  cout << "rm: " << rm << endl;
 }
 
 // 重心を計算する
@@ -114,16 +175,6 @@ void showVector(const vector<int> &v)
       cout << endl;
     }
   }
-}
-
-// ベクトルの要素の総和を返す
-int sum(vector<int>::const_iterator b, vector<int>::const_iterator e)
-{
-  int sum = 0;
-  for(vector<int>::const_iterator i = b; i != e; i++){
-    sum += *i;
-  }
-  return sum;
 }
 
 // masterの値を元にfollowerの値をソートする
@@ -299,7 +350,7 @@ int main(int argc, char** argv)
   showVector(capacity);
 
   // 部署の定員の総和が人数になっているかチェック
-  if(sum(begin(capacity), end(capacity)) != NUM_PEOPLE){
+  if(std::accumulate(begin(capacity), end(capacity), 0) != NUM_PEOPLE){
     cerr << "Summation of capacities of all department must be equal to the number of people." << endl;
     exit(1);
   }  
@@ -382,12 +433,22 @@ int main(int argc, char** argv)
       showVector(target);
     }
 
+    /*
+      実際の処理に入る前に、ここで２つの重要な処理を行う。
+      １．劣っているノードを削除する
+      ２．標準偏差を元に、見込みのないノードを削除する
+    */
+    rmInferiorNodes(q, score_table);
+    rmHopelessNodes(q, d, NUM_PEOPLE);    
+
+    assert(!q.empty());
+
     // listが空でなく、かつ先頭要素の深さがdである間
     while(!q.empty() && q.front().getDepth() == d){
-      if(q.front().getScore() < score_table[q.front().getDepts()]){
-	q.erase(begin(q));
-	continue;
-      }
+      // if(q.front().getScore() < score_table[q.front().getDepts()]){
+      // 	q.erase(begin(q));
+      // 	continue;
+      // }
       Node node = q.front();
       q.erase(begin(q));      
       for(int i = 0; i < NUM_DEPT; i++){
