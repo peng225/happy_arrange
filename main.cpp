@@ -292,27 +292,29 @@ int main(int argc, char** args)
     }   
   }
 
-  // 最もスコアの高いノードを探す
-  int score = std::numeric_limits<int>::min();
-  vector<int> result;
-  while(!q.empty()){
-    Node node = q.front();
-    q.erase(begin(q));    
-    if(score < node.getScore()){
-      score = node.getScore();
-      result = node.getHistory();
-    }
-  }
+  // この時点でqにはただ１つのノードが残っている
+  assert(q.size() == 1);
 
+  int score = q.front().getScore();
+  vector<int> result = q.front().getHistory();
+  // while(!q.empty()){
+  //   Node node = q.front();
+  //   q.erase(begin(q));    
+  //   if(score < node.getScore()){
+  //     score = node.getScore();
+  //     result = node.getHistory();
+  //   }
+  // }
+
+  // 空行を挿入
+  cout << endl;
+  
   cout << "IDs :" << endl;
   showVector(choicesID);
   cout << "history :" << endl;
   showVector(result);
-
-  // 空行を挿入
-  cout << endl;
   // 全体の幸福度を表示
-  cout << "total happiness: " << score << endl;
+  cout << "total happiness: " << endl << score << endl;
 
   return 0;
 }
