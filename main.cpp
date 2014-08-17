@@ -10,14 +10,12 @@
 #include <map>
 #include <limits>
 #include <fstream>
+#include <algorithm>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
 #include "node.h"
-
-// typedef boost::char_separator<char> char_separator;
-// typedef boost::tokenizer<char_separator> tokenizer;
 
 using std::cout;
 using std::cerr;
@@ -30,6 +28,8 @@ using std::end;
 using std::string;
 using std::stoi;
 using std::ifstream;
+using std::swap;
+using std::iter_swap;
 
 
 
@@ -44,6 +44,7 @@ void removeInferiorNode(list<Node> &q, const multiset<int> &depts)
   }
 }
 
+// 重心を計算する
 vector<int> computeCenter(const vector<vector<int> > &choices)
 {
   assert(choices.size() != 0);
@@ -61,6 +62,7 @@ vector<int> computeCenter(const vector<vector<int> > &choices)
   return center;
 }
 
+// ２つのベクトルのユークリッド距離を計算する
 double computeDistance(vector<int> a, vector<int> b)
 {
   if(a.size() != b.size()){
@@ -76,6 +78,7 @@ double computeDistance(vector<int> a, vector<int> b)
   return dist;
 }
 
+// centerに最も近いベクトルの情報を返す
 pair<int, vector<int> >
 getNearestVector(const vector<int> &center,
 		 vector<vector<int> >::const_iterator b,
@@ -98,7 +101,7 @@ getNearestVector(const vector<int> &center,
   return target_info;
 }
 
-// template<typename T>
+// ベクトルの中身を列挙する
 void showVector(const vector<int> &v)
 {
   for(vector<int>::const_iterator i = begin(v); i != end(v); i++){
@@ -111,6 +114,7 @@ void showVector(const vector<int> &v)
   }
 }
 
+// ベクトルの要素の総和を返す
 int sum(vector<int>::const_iterator b, vector<int>::const_iterator e)
 {
   int sum = 0;
@@ -118,6 +122,56 @@ int sum(vector<int>::const_iterator b, vector<int>::const_iterator e)
     sum += *i;
   }
   return sum;
+}
+
+// masterの値を元にfollowerの値をソートする
+// アルゴリズムはクイックソートに準ずる
+void sortFollowerWithMaster(vector<int>::iterator m_b,
+			    vector<int>::iterator m_e,
+			    vector<int>::iterator f_b,
+			    vector<int>::iterator f_e)
+{
+  if(distance(m_b, m_e) != distance(f_b, f_e)){
+    cerr << "Error: Length of master and follower must be the same." << endl;
+    exit(1);
+  }
+  
+  if(distance(m_b, m_e) <= 1){
+    return;
+  }
+
+  vector<int>::iterator m_l  = m_b;
+  vector<int>::iterator m_r = m_e - 1;
+  vector<int>::iterator f_l  = f_b;
+  vector<int>::iterator f_r = f_e - 1;
+  int pivot = *m_r;
+
+  while(distance(m_l, m_r) > 0){
+    while(distance(m_l, m_r) > 0 && *m_l < pivot){
+      ++m_l;
+      ++f_l;
+    }
+    if(distance(m_l, m_r) == 0){
+      break;
+    }
+
+    while(distance(m_l, m_r) > 0 && pivot <= *m_r){
+      --m_r;
+      --f_r;
+    }
+    if(distance(m_l, m_r) == 0){
+      break;
+    }
+
+    iter_swap(m_l, m_r);
+    iter_swap(f_l, f_r);
+  }
+
+  iter_swap(m_l, m_e - 1);
+  iter_swap(f_l, f_e - 1);
+
+  sortFollowerWithMaster(m_b, m_l, f_b, f_l);
+  sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
 }
 
 void defaultSettings(int &tmp_NUM_CHOICES, vector<int> &scores)
@@ -143,27 +197,19 @@ int main(int argc, char** argv)
   
   int opt;
   char inputFileName[100];
+  // getoptの返り値は見付けたオプション
   while((opt = getopt(argc, argv, "hi:s:"))!=-1){
     switch(opt){
-      /* 値をとらないオプション */
-    case 'h':    
-      /* getoptの返り値は見付けたオプションである. */
+      // 値をとらないオプション
+    case 'h':          
       cout << "Have a nice day!" << endl;
       exit(0);
       
-      /* 値を取る引数の場合は外部変数optargにその値を格納する. */
+      // 値を取る引数の場合は外部変数optargにその値を格納する
     case 'i':
       // 入力ファイル名の設定
       strcpy(inputFileName, optarg);
       break;
-    // case 'n':
-    //   // 志望を出せる数を設定
-    //   tmp_NUM_CHOICES = atoi(optarg);
-    //   if(tmp_NUM_CHOICES <= 0){
-    // 	cerr << "The value of -n option must be positive." << endl;
-    // 	exit(1);
-    //   }
-    //   break;
     case 's':
       // 各志望のスコアを設定 
       {	
@@ -303,20 +349,7 @@ int main(int argc, char** argv)
   q.push_back(root);
 
   // これまでに選択した部署の集合をキーとし、スコアをバリューとしたマップ
-  map<multiset<int>, int> score_table;
-
-  // multiset<int> a, b;
-  // a.insert(10); b.insert(10);
-  // assert(a == b);
-  // b.insert(11);
-  // assert(a != b);
-  // multiset<int> c;
-  // c.insert(10);
-  // c.insert(11);
-  // assert(b == c);
-  // c.erase(11);
-  // assert(a == c);
-  
+  map<multiset<int>, int> score_table;  
 
   cout << "Algorithm start!" << endl;  
   
@@ -333,8 +366,8 @@ int main(int argc, char** argv)
 
     // 選択したベクトルをchoicesから削除
     // choices.erase(begin(choices) + targetInfo.first);
-    std::swap(choices.at(d), choices.at(d + targetInfo.first));
-    std::swap(choicesID.at(d), choicesID.at(d + targetInfo.first));
+    swap(choices.at(d), choices.at(d + targetInfo.first));
+    swap(choicesID.at(d), choicesID.at(d + targetInfo.first));
 
     cout << choicesID.at(d) << " : ";
     showVector(target);
@@ -414,10 +447,18 @@ int main(int argc, char** argv)
   // 空行を挿入
   cout << endl;
   
-  cout << "IDs :" << endl;
-  showVector(choicesID);
-  cout << "history :" << endl;
+  // cout << "IDs :" << endl;
+  // showVector(choicesID);
+  // cout << "history :" << endl;
+  // showVector(result);
+
+  // ID順に結果をソート
+  sortFollowerWithMaster(begin(choicesID), end(choicesID),
+			 begin(result), end(result));
+
+  cout << "result :" << endl;
   showVector(result);
+  
   // 全体の幸福度を表示
   cout << "total happiness: " << endl << score << endl;
 
