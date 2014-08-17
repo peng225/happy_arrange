@@ -38,8 +38,10 @@ void removeInferiorNode(list<Node> &q, const multiset<int> &depts)
   for(list<Node>::iterator i = begin(q);
       i != end(q); i++){
     if(i->getDepts() == depts){
-      i = q.erase(i);
-      i--;
+      // i = q.erase(i);
+      q.erase(i);
+      break;
+      // i--;
     }
   }
 }
@@ -382,8 +384,12 @@ int main(int argc, char** argv)
 
     // listが空でなく、かつ先頭要素の深さがdである間
     while(!q.empty() && q.front().getDepth() == d){
+      if(q.front().getScore() < score_table[q.front().getDepts()]){
+	q.erase(begin(q));
+	continue;
+      }
       Node node = q.front();
-      q.erase(begin(q));
+      q.erase(begin(q));      
       for(int i = 0; i < NUM_DEPT; i++){
 	// 部署iがすでに定員に達していたら
 	if(node.getNumDept(i) == capacity.at(i)){
@@ -437,7 +443,7 @@ int main(int argc, char** argv)
 	    cout << "upd score: " << newNode.getScore() << endl;
 	  }
 	  // 古いノードを削除し、新規ノードをlistに入れる
-	  removeInferiorNode(q, newNode.getDepts());
+	  // removeInferiorNode(q, newNode.getDepts());
 	  q.push_back(newNode);
 	}// else{
 	//   cout << "i : " << i << " bad" << endl;
@@ -447,18 +453,18 @@ int main(int argc, char** argv)
   }
 
   // この時点でqにはただ１つのノードが残っている
-  assert(q.size() == 1);
+  // assert(q.size() == 1);
 
-  int score = q.front().getScore();
-  vector<int> result = q.front().getHistory();
-  // while(!q.empty()){
-  //   Node node = q.front();
-  //   q.erase(begin(q));    
-  //   if(score < node.getScore()){
-  //     score = node.getScore();
-  //     result = node.getHistory();
-  //   }
-  // }
+  int score = 0; // q.front().getScore();
+  vector<int> result; // = q.front().getHistory();
+  while(!q.empty()){
+    Node node = q.front();
+    q.erase(begin(q));    
+    if(score < node.getScore()){
+      score = node.getScore();
+      result = node.getHistory();
+    }
+  }
 
   // 空行を挿入
   cout << endl;

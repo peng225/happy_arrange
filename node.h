@@ -8,7 +8,6 @@ class Node
 {
 private:
   int depth;
-  int dept;
   int score;
   vector<int> history;
   multiset<int> depts;
@@ -16,6 +15,7 @@ public:
   Node(int d)
     {
       depth = d;
+      score = 0;
     }
 
   void addHistory(int hist)
@@ -41,7 +41,6 @@ public:
   void addDept(int dept)
   {
     depts.insert(dept);
-    this->dept = depth;
   }
   
   int getDepth()
