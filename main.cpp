@@ -509,9 +509,9 @@ int main(int argc, char** argv)
 	    score_table[newNode.getDepts()] = target.at(i);
 	  }else{
 	    score_table[newNode.getDepts()]
-	      = score_table[node.getDepts()] + target.at(i);
+	      = score_table.at(node.getDepts()) + target.at(i);
 	  }
-	  newNode.setScore(score_table[newNode.getDepts()]);
+	  newNode.setScore(score_table.at(newNode.getDepts()));
 	  
 	  if(verbose){
 	    cout << "new score: " << newNode.getScore() << endl;
@@ -521,8 +521,8 @@ int main(int argc, char** argv)
 	  q.push_back(newNode);
 	}
 	// 既存のものよりスコアが高い場合は登録	  
-	else if(score_table[newNode.getDepts()]
-		< score_table[node.getDepts()] + target.at(i)){
+	else if(score_table.at(newNode.getDepts())
+		< score_table.at(node.getDepts()) + target.at(i)){
 	  // 履歴を更新
 	  newNode.addHistory(i);
 	  // 自分が持つ部署集合のスコアを記録
@@ -532,8 +532,8 @@ int main(int argc, char** argv)
 	    showVector(newNode.getHistory());
 	  }
 	  score_table[newNode.getDepts()]
-	    = score_table[node.getDepts()] + target.at(i);
-	  newNode.setScore(score_table[newNode.getDepts()]);
+	    = score_table.at(node.getDepts()) + target.at(i);
+	  newNode.setScore(score_table.at(newNode.getDepts()));
 	  if(verbose){
 	    cout << "upd score: " << newNode.getScore() << endl;
 	  }
