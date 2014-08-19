@@ -40,6 +40,30 @@ using std::iter_swap;
 
 using namespace boost::accumulators;
 
+// ざっくりとした上界を計算
+int getUpperBound(int nd, int np, const vector<int> &scores,
+		  const vector<vector<int> > &choices,
+		  const vector<int> &capacity)
+{  
+  int upper = 0;
+  for(int i = 0; i < nd; i++){
+    int count = 0;
+    for(int j = 0; j < np; j++){
+      if(choices.at(j).at(i) == scores.at(0)){
+	count++;
+      }
+    }
+    // 定員を超える第一志望人員がいたら残念賞
+    if(capacity.at(i) < count){
+      upper += scores.at(0) * capacity.at(i);
+      upper += scores.at(1) * (count - capacity.at(i));
+    }else{
+      upper += scores.at(0) * count;
+    }
+  }
+  return upper;
+}
+
 
 double getStdDev(const list<Node> q)
 {
@@ -376,7 +400,7 @@ int main(int argc, char** argv)
     getline(ifs, tstr);        
     boost::split(list_string, tstr, boost::is_any_of(delim));
     if((int)list_string.size() != NUM_CHOICES){
-      cerr << "Error : The size of score list is wrong." << endl;
+      cerr << "Error: The size of score list is wrong." << endl;
       exit(1);
     }
     
@@ -392,7 +416,7 @@ int main(int argc, char** argv)
   for(vector<vector<int> >::iterator i = begin(choices);
       i != end(choices); i++){
     showVector(*i);
-  }
+  }  
 
   // 全志望度ベクトルの重心を計算
   vector<int> center(NUM_CHOICES);
@@ -415,7 +439,7 @@ int main(int argc, char** argv)
   {
     if(verbose){
       cout << endl;    
-      cout << "depth : " << d << endl;
+      cout << "depth: " << d << endl;
     }
     // 全志望度ベクトルの重心に最も近い志望度ベクトルを選ぶ
     pair<int, vector<int> > targetInfo
@@ -429,7 +453,7 @@ int main(int argc, char** argv)
     swap(choicesID.at(d), choicesID.at(d + targetInfo.first));
 
     if(verbose){
-      cout << choicesID.at(d) << " : ";
+      cout << choicesID.at(d) << ": ";
       showVector(target);
     }
 
@@ -443,8 +467,9 @@ int main(int argc, char** argv)
 
     assert(!q.empty());
 
-    // listが空でなく、かつ先頭要素の深さがdである間
-    while(!q.empty() && q.front().getDepth() == d){
+    // 先頭要素の深さがdである間
+    while(q.front().getDepth() == d){
+      assert(!q.empty());
       // if(q.front().getScore() < score_table[q.front().getDepts()]){
       // 	q.erase(begin(q));
       // 	continue;
@@ -467,9 +492,9 @@ int main(int argc, char** argv)
 	  // 履歴を更新
 	  newNode.addHistory(i);
 	  // 自分が持つ部署集合のスコアを記録
-	  // cout << "i : " << i << endl;
+	  // cout << "i: " << i << endl;
 	  if(verbose){
-	    cout << "new : ";
+	    cout << "new: ";
 	    showVector(newNode.getHistory());
 	  }
 
@@ -480,9 +505,11 @@ int main(int argc, char** argv)
 	      = score_table[node.getDepts()] + target.at(i);
 	  }
 	  newNode.setScore(score_table[newNode.getDepts()]);
+	  
 	  if(verbose){
 	    cout << "new score: " << newNode.getScore() << endl;
 	  }
+	  
 	  // 新規ノードをlistに入れる
 	  q.push_back(newNode);
 	}
@@ -492,9 +519,9 @@ int main(int argc, char** argv)
 	  // 履歴を更新
 	  newNode.addHistory(i);
 	  // 自分が持つ部署集合のスコアを記録
-	  // cout << "i : " << i << endl;
+	  // cout << "i: " << i << endl;
 	  if(verbose){
-	    cout << "upd : ";
+	    cout << "upd: ";
 	    showVector(newNode.getHistory());
 	  }
 	  score_table[newNode.getDepts()]
@@ -507,7 +534,7 @@ int main(int argc, char** argv)
 	  // removeInferiorNode(q, newNode.getDepts());
 	  q.push_back(newNode);
 	}// else{
-	//   cout << "i : " << i << " bad" << endl;
+	//   cout << "i: " << i << " bad" << endl;
 	// }
       }
     }   
@@ -530,17 +557,20 @@ int main(int argc, char** argv)
   // 空行を挿入
   cout << endl;
   
-  // cout << "IDs :" << endl;
+  // cout << "IDs:" << endl;
   // showVector(choicesID);
-  // cout << "history :" << endl;
+  // cout << "history:" << endl;
   // showVector(result);
 
   // ID順に結果をソート
   sortFollowerWithMaster(begin(choicesID), end(choicesID),
 			 begin(result), end(result));
 
-  cout << "result :" << endl;
+  cout << "result:" << endl;
   showVector(result);
+
+  int upper = getUpperBound(NUM_DEPT, NUM_PEOPLE, scores, choices, capacity);
+  cout << "theoretical upper: " << endl << upper << endl;
   
   // 全体の幸福度を表示
   cout << "total happiness: " << endl << score << endl;
