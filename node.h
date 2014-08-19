@@ -23,7 +23,7 @@ public:
     history.push_back(hist);
   }
 
-  const vector<int>& getHistory()
+  const vector<int>& getHistory() const
   {
     return history;
   }
@@ -33,7 +33,7 @@ public:
     this->score = score;
   }
 
-  int getScore()
+  int getScore() const
   {
     return score;
   }
@@ -43,7 +43,7 @@ public:
     depts.insert(dept);
   }
   
-  int getDepth()
+  int getDepth() const
   {
     return depth;
   }
@@ -54,12 +54,12 @@ public:
   }
   
 
-  int getNumDept(int dept)
+  int getNumDept(int dept) const
   {
     return depts.count(dept);
   }
 
-  const multiset<int>& getDepts()
+  const multiset<int>& getDepts() const
   {
     return depts;
   }

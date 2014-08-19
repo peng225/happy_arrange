@@ -85,12 +85,13 @@ double getMean(const list<Node> &q)
   return mean(acc);
 }
 
-void rmInferiorNodes(list<Node> &q, map<multiset<int>, int> &score_table)
+void rmInferiorNodes(list<Node> &q, const map<multiset<int>, int> &score_table)
 {
   assert(!q.empty());
   for(list<Node>::iterator i = begin(q);
       i != end(q); i++){
-    if(i->getScore() < score_table[i->getDepts()]){
+    if(score_table.find(i->getDepts()) != end(score_table)
+       && i->getScore() < score_table.at(i->getDepts())){
       i = q.erase(i);
       i--;
     }
