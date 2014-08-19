@@ -65,7 +65,7 @@ int getUpperBound(int nd, int np, const vector<int> &scores,
 }
 
 
-double getStdDev(const list<Node> q)
+double getStdDev(const list<Node> &q)
 {
   assert(!q.empty());
   accumulator_set<int, stats<tag::variance> > acc;
@@ -75,7 +75,7 @@ double getStdDev(const list<Node> q)
   return sqrt(variance(acc));
 }
 
-double getMean(const list<Node> q)
+double getMean(const list<Node> &q)
 {
   assert(!q.empty());
   accumulator_set<int, stats<tag::variance> > acc;
@@ -85,7 +85,7 @@ double getMean(const list<Node> q)
   return mean(acc);
 }
 
-void rmInferiorNodes(list<Node> &q, map<multiset<int>, int> score_table)
+void rmInferiorNodes(list<Node> &q, map<multiset<int>, int> &score_table)
 {
   assert(!q.empty());
   for(list<Node>::iterator i = begin(q);
@@ -150,7 +150,7 @@ vector<int> computeCenter(const vector<vector<int> > &choices)
 }
 
 // ２つのベクトルのユークリッド距離を計算する
-double computeDistance(vector<int> a, vector<int> b)
+double computeDistance(const vector<int> &a, const vector<int> &b)
 {
   if(a.size() != b.size()){
     cerr << "Different size!" << endl;
@@ -432,7 +432,13 @@ int main(int argc, char** argv)
   // これまでに選択した部署の集合をキーとし、スコアをバリューとしたマップ
   map<multiset<int>, int> score_table;  
 
-  cout << "Algorithm start!" << endl;  
+
+
+  
+  cout << "Algorithm start!" << endl;
+
+
+  
   
   // 探索深さdが人数より小さい間
   for(int d = 0; d < NUM_PEOPLE; d++)
