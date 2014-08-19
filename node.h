@@ -12,11 +12,7 @@ private:
   vector<int> history;
   multiset<int> depts;
 public:
-  Node(int d)
-    {
-      depth = d;
-      score = 0;
-    }
+ Node(int d) : depth(d), score(0), history({}), depts({}) {}
 
   void addHistory(int hist)
   {
