@@ -434,10 +434,10 @@ int main(int argc, char** argv)
   for(int i = 0; i < NUM_PEOPLE; i++) {
     bool handled = false;
     for(int j = 0; j < NUM_CHOICES; j++){
-      // もしまだ第i希望の部署に空きがあればそこに入る
-      vector<int>::iterator it;
-      it = find(begin(choices.at(i)), end(choices.at(i)), scores.at(j));
-      int ind = distance(begin(choices.at(i)), it);	
+      // もしまだ第j希望の部署に空きがあればそこに入る
+      vector<int>::iterator jthChoice;
+      jthChoice = find(begin(choices.at(i)), end(choices.at(i)), scores.at(j));
+      int ind = distance(begin(choices.at(i)), jthChoice);
       if(cap_filled.at(ind) < capacity.at(ind)){
 	result.at(i) = ind;
 	score += scores.at(j);

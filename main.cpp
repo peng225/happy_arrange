@@ -40,6 +40,38 @@ using std::iter_swap;
 
 using namespace boost::accumulators;
 
+double getScoreMean(vector<int> &scores, int numDept)
+{
+  accumulator_set<int, stats<tag::mean> > acc;  
+    
+  for(int i = 0; i < (int)(numDept - scores.size()); i++){
+    acc(0);
+  }
+
+  for(vector<int>::iterator i = begin(scores);
+      i != end(scores); i++){
+    acc(*i);
+  }
+  
+  return mean(acc);
+}
+
+double getScoreVariance(vector<int> &scores, int numDept)
+{
+  accumulator_set<int, stats<tag::variance> > acc;  
+    
+  for(int i = 0; i < (int)(numDept - scores.size()); i++){
+    acc(0);
+  }
+
+  for(vector<int>::iterator i = begin(scores);
+      i != end(scores); i++){
+    acc(*i);
+  }
+  
+  return variance(acc);
+}
+
 // ざっくりとした上界を計算
 int getUpperBound(int nd, int np, const vector<int> &scores,
 		  const vector<vector<int> > &choices,
@@ -439,7 +471,9 @@ int main(int argc, char** argv)
   cout << "Algorithm start!" << endl;
 
 
-  
+
+  double scoreMean = getScoreMean(scores, NUM_DEPT);
+  double scoreVariance = getScoreVariance(scores, NUM_DEPT);
   
   // 探索深さdが人数より小さい間
   for(int d = 0; d < NUM_PEOPLE; d++)
@@ -464,15 +498,28 @@ int main(int argc, char** argv)
       showVector(target);
     }
 
-    /*
-      実際の処理に入る前に、ここで２つの重要な処理を行う。
-      １．劣っているノードを削除する
-      ２．標準偏差を元に、見込みのないノードを削除する
-    */
+    // 実際の処理に入る前に劣っているノードを削除する
     rmInferiorNodes(q, score_table);
-    rmHopelessNodes(q, d, NUM_PEOPLE);    
+    
+    // rmHopelessNodes(q, d, NUM_PEOPLE);
+
+    /*
+      カットオフ値をここで決めておく。
+      この値は現在のqの内容から推測する。
+    */
+    accumulator_set<int, stats<tag::variance, tag::mean> > acc;
+    BOOST_FOREACH(Node n, q) {    
+      acc(n.getScore());
+    }  
+    double mn = mean(acc);
+    double va = variance(acc);
+    double specMn = mn + scoreMean;
+    double specSd = sqrt(va + scoreVariance);
+    double cutOff = getCutOffLowerBound(specMn, specSd, d, NUM_PEOPLE);
+    int numRemoved = 0;
 
     assert(!q.empty());
+    cout << "d, q: " << d << ", " << q.size() << endl;
 
     // 先頭要素の深さがdである間
     while(q.front().getDepth() == d){
@@ -496,55 +543,67 @@ int main(int argc, char** argv)
 	
 	// もしこれまでに選択された部署の集合が未登録なら登録	
 	if(score_table.find(newNode.getDepts()) == end(score_table)){
-	  // 履歴を更新
-	  newNode.addHistory(i);
-	  // 自分が持つ部署集合のスコアを記録
-	  // cout << "i: " << i << endl;
-	  if(verbose){
-	    cout << "new: ";
-	    showVector(newNode.getHistory());
-	  }
+	  if(cutOff <= (score_table.find(node.getDepts()) != end(score_table)
+			 ? score_table.at(node.getDepts()) : 0)
+	   + target.at(i)){
+	    // 履歴を更新
+	    newNode.addHistory(i);
+	    // 自分が持つ部署集合のスコアを記録
+	    // cout << "i: " << i << endl;
+	    if(verbose){
+	      cout << "new: ";
+	      showVector(newNode.getHistory());
+	    }
 
-	  if(node.getDepts().empty()){
-	    score_table[newNode.getDepts()] = target.at(i);
+	    if(node.getDepts().empty()){
+	      score_table[newNode.getDepts()] = target.at(i);
+	    }else{
+	      score_table[newNode.getDepts()]
+		= score_table.at(node.getDepts()) + target.at(i);
+	    }
+	    newNode.setScore(score_table.at(newNode.getDepts()));
+	  
+	    if(verbose){
+	      cout << "new score: " << newNode.getScore() << endl;
+	    }
+	  
+	    // 新規ノードをlistに入れる
+	    q.push_back(newNode);	    
 	  }else{
-	    score_table[newNode.getDepts()]
-	      = score_table.at(node.getDepts()) + target.at(i);
+	    numRemoved++;
 	  }
-	  newNode.setScore(score_table.at(newNode.getDepts()));
-	  
-	  if(verbose){
-	    cout << "new score: " << newNode.getScore() << endl;
-	  }
-	  
-	  // 新規ノードをlistに入れる
-	  q.push_back(newNode);
 	}
 	// 既存のものよりスコアが高い場合は登録	  
 	else if(score_table.at(newNode.getDepts())
 		< score_table.at(node.getDepts()) + target.at(i)){
-	  // 履歴を更新
-	  newNode.addHistory(i);
-	  // 自分が持つ部署集合のスコアを記録
-	  // cout << "i: " << i << endl;
-	  if(verbose){
-	    cout << "upd: ";
-	    showVector(newNode.getHistory());
+	  if(cutOff <= score_table.at(node.getDepts()) + target.at(i)){
+	    // 履歴を更新
+	    newNode.addHistory(i);
+	    // 自分が持つ部署集合のスコアを記録
+	    // cout << "i: " << i << endl;
+	    if(verbose){
+	      cout << "upd: ";
+	      showVector(newNode.getHistory());
+	    }
+	    score_table[newNode.getDepts()]
+	      = score_table.at(node.getDepts()) + target.at(i);
+	    newNode.setScore(score_table.at(newNode.getDepts()));
+	    if(verbose){
+	      cout << "upd score: " << newNode.getScore() << endl;
+	    }
+	    // 古いノードを削除し、新規ノードをlistに入れる
+	    // removeInferiorNode(q, newNode.getDepts());
+	    q.push_back(newNode);	    
+	  }else{
+	    numRemoved++;
 	  }
-	  score_table[newNode.getDepts()]
-	    = score_table.at(node.getDepts()) + target.at(i);
-	  newNode.setScore(score_table.at(newNode.getDepts()));
-	  if(verbose){
-	    cout << "upd score: " << newNode.getScore() << endl;
-	  }
-	  // 古いノードを削除し、新規ノードをlistに入れる
-	  // removeInferiorNode(q, newNode.getDepts());
-	  q.push_back(newNode);
 	}// else{
 	//   cout << "i: " << i << " bad" << endl;
 	// }
       }
-    }   
+    }
+    
+    cout << "rm: " << numRemoved << endl;
   }
 
   // この時点でqにはただ１つのノードが残っている
