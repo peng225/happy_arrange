@@ -130,39 +130,24 @@ void rmInferiorNodes(list<Node> &q, const map<multiset<int>, int> &score_table)
   }
 }
 
-double getCutOffLowerBound(double mean, double sd, int d, int n)
+double getCutOffLowerBound(list<Node> &q,
+			   double scoreMean, double scoreVariance,
+			   int d, int numPeople)
 {
-  assert(n != 1);
-  // return mean - sd * ((double)n / (d + 1) + n - 2) / (n - 1);
-  return mean - 2.0 * sd / (d + 1);
-}
+  assert(numPeople != 1);
 
-// 望みのないノードを削除
-void rmHopelessNodes(list<Node> &q, int d, int n)
-{
-  assert(!q.empty());
-
-  cout << "d, q: " << d << ", " << q.size() << endl;  
-  accumulator_set<int, stats<tag::variance> > acc;
+  accumulator_set<int, stats<tag::variance, tag::mean> > acc;
   BOOST_FOREACH(Node n, q) {    
     acc(n.getScore());
   }
-  
   double mn = mean(acc);
-  double sd = sqrt(variance(acc));
-  double cutOff = getCutOffLowerBound(mn, sd, d, n);
-
-  int rm = 0;
-  for(list<Node>::iterator i = begin(q);
-      i != end(q); i++){
-    if(i->getScore() < cutOff){
-      i = q.erase(i);
-      i--;
-      rm++;      
-    }
-  }
-  cout << "rm: " << rm << endl;
+  double va = variance(acc);
+  double specMn = mn + scoreMean;
+  double specSd = sqrt(va + scoreVariance);
+  
+  return specMn - 2.0 * specSd / (d + 1);
 }
+
 
 // 重心を計算する
 vector<int> computeCenter(const vector<vector<int> > &choices)
@@ -507,15 +492,9 @@ int main(int argc, char** argv)
       カットオフ値をここで決めておく。
       この値は現在のqの内容から推測する。
     */
-    accumulator_set<int, stats<tag::variance, tag::mean> > acc;
-    BOOST_FOREACH(Node n, q) {    
-      acc(n.getScore());
-    }  
-    double mn = mean(acc);
-    double va = variance(acc);
-    double specMn = mn + scoreMean;
-    double specSd = sqrt(va + scoreVariance);
-    double cutOff = getCutOffLowerBound(specMn, specSd, d, NUM_PEOPLE);
+    double cutOff = getCutOffLowerBound(q, scoreMean, scoreVariance,
+					d, NUM_PEOPLE);
+    
     int numRemoved = 0;
 
     assert(!q.empty());
