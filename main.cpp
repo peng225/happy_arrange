@@ -522,8 +522,9 @@ int main(int argc, char** argv)
 	
 	// もしこれまでに選択された部署の集合が未登録なら登録	
 	if(score_table.find(newNode.getDepts()) == end(score_table)){
-	  if(cutOff <= (score_table.find(node.getDepts()) != end(score_table)
-			 ? score_table.at(node.getDepts()) : 0)
+	  // if(cutOff <= (score_table.find(node.getDepts()) != end(score_table)
+	  if(cutOff <= (node.getDepts().empty()
+			? 0 : score_table.at(node.getDepts()))
 	   + target.at(i)){
 	    // 履歴を更新
 	    newNode.addHistory(i);
