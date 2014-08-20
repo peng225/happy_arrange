@@ -43,8 +43,9 @@ using namespace boost::accumulators;
 double getScoreMean(vector<int> &scores, int numDept)
 {
   accumulator_set<int, stats<tag::mean> > acc;  
-    
-  for(int i = 0; i < (int)(numDept - scores.size()); i++){
+
+  // scoresには希望が通らなかった場合のスコア(0)も含まれるので、それを除く
+  for(int i = 0; i < (int)(numDept - scores.size()) + 1; i++){
     acc(0);
   }
 
@@ -59,8 +60,9 @@ double getScoreMean(vector<int> &scores, int numDept)
 double getScoreVariance(vector<int> &scores, int numDept)
 {
   accumulator_set<int, stats<tag::variance> > acc;  
-    
-  for(int i = 0; i < (int)(numDept - scores.size()); i++){
+
+  // scoresには希望が通らなかった場合のスコア(0)も含まれるので、それを除く
+  for(int i = 0; i < (int)(numDept - scores.size()) + 1; i++){
     acc(0);
   }
 
