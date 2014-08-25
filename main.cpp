@@ -29,18 +29,6 @@ using std::stoi;
 using std::ifstream;
 
 
-// デフォルトのセッティング
-void defaultSettings(int &tmp_NUM_CHOICES, vector<int> &scores)
-{
-  tmp_NUM_CHOICES = 3;
-  scores.resize(tmp_NUM_CHOICES + 1);
-  scores[0] = 5;
-  scores[1] = 3;
-  scores[2] = 2;
-  scores[3] = 0;
-}
-
-
 int main(int argc, char** argv)
 {
   //コマンドライン引数のチェック  

@@ -14,7 +14,7 @@
 #include <boost/accumulators/statistics/variance.hpp>
 
 #include "node.h"
-#include "myutil.h"
+#include "common.h"
 
 using std::list;
 using std::map;
@@ -29,30 +29,6 @@ using std::swap;
 
 
 using namespace boost::accumulators;
-
-// ざっくりとした上界を計算
-int getUpperBound(int nd, int np, const vector<int> &scores,
-		  const vector<vector<int> > &choices,
-		  const vector<int> &capacity)
-{  
-  int upper = 0;
-  for(int i = 0; i < nd; i++){
-    int count = 0;
-    for(int j = 0; j < np; j++){
-      if(choices.at(j).at(i) == scores.at(0)){
-	count++;
-      }
-    }
-    // 定員を超える第一志望人員がいたら残念賞
-    if(capacity.at(i) < count){
-      upper += scores.at(0) * capacity.at(i);
-      upper += scores.at(1) * (count - capacity.at(i));
-    }else{
-      upper += scores.at(0) * count;
-    }
-  }
-  return upper;
-}
 
 
 /*

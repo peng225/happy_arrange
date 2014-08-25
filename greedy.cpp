@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 #include <list>
-#include <map>
 #include <limits>
 #include <fstream>
 #include <algorithm>
@@ -23,13 +22,12 @@
 
 
 #include "node.h"
+#include "common.h"
 
 using std::cout;
 using std::cerr;
 using std::endl;
 using std::list;
-using std::map;
-using std::pair;
 using std::begin;
 using std::end;
 using std::string;
@@ -37,230 +35,6 @@ using std::stoi;
 using std::ifstream;
 using std::swap;
 using std::iter_swap;
-
-using namespace boost::accumulators;
-
-// ざっくりとした上界を計算
-int getUpperBound(int nd, int np, const vector<int> &scores,
-		  const vector<vector<int> > &choices,
-		  const vector<int> &capacity)
-{  
-  int upper = 0;
-  for(int i = 0; i < nd; i++){
-    int count = 0;
-    for(int j = 0; j < np; j++){
-      if(choices.at(j).at(i) == scores.at(0)){
-	count++;
-      }
-    }
-    // 定員を超える第一志望人員がいたら残念賞
-    if(capacity.at(i) < count){
-      upper += scores.at(0) * capacity.at(i);
-      upper += scores.at(1) * (count - capacity.at(i));
-    }else{
-      upper += scores.at(0) * count;
-    }
-  }
-  return upper;
-}
-
-
-double getStdDev(const list<Node> &q)
-{
-  assert(!q.empty());
-  accumulator_set<int, stats<tag::variance> > acc;
-  BOOST_FOREACH(Node n, q) {    
-    acc(n.getScore());
-  }
-  return sqrt(variance(acc));
-}
-
-double getMean(const list<Node> &q)
-{
-  assert(!q.empty());
-  accumulator_set<int, stats<tag::variance> > acc;
-  BOOST_FOREACH(Node n, q) {    
-    acc(n.getScore());
-  }
-  return mean(acc);
-}
-
-void rmInferiorNodes(list<Node> &q, const map<multiset<int>, int> &score_table)
-{
-  assert(!q.empty());
-  for(list<Node>::iterator i = begin(q);
-      i != end(q); i++){
-    if(score_table.find(i->getDepts()) != end(score_table)
-       && i->getScore() < score_table.at(i->getDepts())){
-      i = q.erase(i);
-      i--;
-    }
-  }
-}
-
-double getCutOffLowerBound(double mean, double sd, int d, int n)
-{
-  assert(n != 1);
-  // return mean - sd * ((double)n / (d + 1) + n - 2) / (n - 1);
-  return mean - 2.0 * sd / (d + 1);
-}
-
-// 望みのないノードを削除
-void rmHopelessNodes(list<Node> &q, int d, int n)
-{
-  assert(!q.empty());
-
-  cout << "d, q: " << d << ", " << q.size() << endl;  
-  accumulator_set<int, stats<tag::variance> > acc;
-  BOOST_FOREACH(Node n, q) {    
-    acc(n.getScore());
-  }
-  
-  double mn = mean(acc);
-  double sd = sqrt(variance(acc));
-  double cutOff = getCutOffLowerBound(mn, sd, d, n);
-
-  int rm = 0;
-  for(list<Node>::iterator i = begin(q);
-      i != end(q); i++){
-    if(i->getScore() < cutOff){
-      i = q.erase(i);
-      i--;
-      rm++;      
-    }
-  }
-  cout << "rm: " << rm << endl;
-}
-
-// 重心を計算する
-vector<int> computeCenter(const vector<vector<int> > &choices)
-{
-  assert(choices.size() != 0);
-  vector<int> center(choices.at(0).size());
-
-  for(int j = 0; j < (int)center.size(); j++){
-    int sum = 0;
-    for(vector<vector<int> >::const_iterator i = begin(choices);
-	i != end(choices); i++){
-      sum += i->at(j);
-    }
-    center.at(j) = sum / choices.size();
-  }
-  
-  return center;
-}
-
-// ２つのベクトルのユークリッド距離を計算する
-double computeDistance(const vector<int> &a, const vector<int> &b)
-{
-  if(a.size() != b.size()){
-    cerr << "Different size!" << endl;
-    exit(1);
-  }
-
-  double dist = 0;
-  for(int i = 0; i < (int)a.size(); i++){
-    dist += (a.at(i) - b.at(i)) * (a.at(i) - b.at(i));
-  }
-  dist /= a.size();
-  return dist;
-}
-
-// centerに最も近いベクトルの情報を返す
-pair<int, vector<int> >
-getNearestVector(const vector<int> &center,
-		 vector<vector<int> >::const_iterator b,
-		 vector<vector<int> >::const_iterator e)
-{
-  pair<int, vector<int> > target_info;
-  target_info.second.resize(center.size());
-
-  double dist = std::numeric_limits<double>::max();
-  for(vector<vector<int> >::const_iterator i = b;
-      i != e; i++){
-    double tmp_dist = computeDistance(*i, center);
-    if(tmp_dist < dist){
-      dist = tmp_dist;      
-      target_info.first = distance(b, i);
-      target_info.second = *i;
-    }
-  }
-
-  return target_info;
-}
-
-// ベクトルの中身を列挙する
-void showVector(const vector<int> &v)
-{
-  for(vector<int>::const_iterator i = begin(v); i != end(v); i++){
-    cout << *i;
-    if(distance(i, end(v)) != 1){
-      cout << ", ";
-    }else{
-      cout << endl;
-    }
-  }
-}
-
-// masterの値を元にfollowerの値をソートする
-// アルゴリズムはクイックソートに準ずる
-void sortFollowerWithMaster(vector<int>::iterator m_b,
-			    vector<int>::iterator m_e,
-			    vector<int>::iterator f_b,
-			    vector<int>::iterator f_e)
-{
-  if(distance(m_b, m_e) != distance(f_b, f_e)){
-    cerr << "Error: Length of master and follower must be the same." << endl;
-    exit(1);
-  }
-  
-  if(distance(m_b, m_e) <= 1){
-    return;
-  }
-
-  vector<int>::iterator m_l  = m_b;
-  vector<int>::iterator m_r = m_e - 1;
-  vector<int>::iterator f_l  = f_b;
-  vector<int>::iterator f_r = f_e - 1;
-  int pivot = *m_r;
-
-  while(distance(m_l, m_r) > 0){
-    while(distance(m_l, m_r) > 0 && *m_l < pivot){
-      ++m_l;
-      ++f_l;
-    }
-    if(distance(m_l, m_r) == 0){
-      break;
-    }
-
-    while(distance(m_l, m_r) > 0 && pivot <= *m_r){
-      --m_r;
-      --f_r;
-    }
-    if(distance(m_l, m_r) == 0){
-      break;
-    }
-
-    iter_swap(m_l, m_r);
-    iter_swap(f_l, f_r);
-  }
-
-  iter_swap(m_l, m_e - 1);
-  iter_swap(f_l, f_e - 1);
-
-  sortFollowerWithMaster(m_b, m_l, f_b, f_l);
-  sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
-}
-
-void defaultSettings(int &tmp_NUM_CHOICES, vector<int> &scores)
-{
-  tmp_NUM_CHOICES = 3;
-  scores.resize(tmp_NUM_CHOICES + 1);
-  scores[0] = 5;
-  scores[1] = 3;
-  scores[2] = 2;
-  scores[3] = 0;
-}
 
 
 int main(int argc, char** argv)
@@ -274,18 +48,19 @@ int main(int argc, char** argv)
   defaultSettings(tmp_NUM_CHOICES, scores);  
   
   int opt;
-  bool verbose = false;
+  // bool verbose = false;
   char inputFileName[100];
   // getoptの返り値は見付けたオプション
-  while((opt = getopt(argc, argv, "hvi:s:"))!=-1){
+  // while((opt = getopt(argc, argv, "hvi:s:"))!=-1){
+  while((opt = getopt(argc, argv, "hi:s:"))!=-1){
     switch(opt){
       // 値をとらないオプション
     case 'h':          
       cout << "Have a nice day!" << endl;
       exit(0);
-    case 'v':
-      verbose = true;
-      break;
+    // case 'v':
+    //   verbose = true;
+    //   break;
       
       // 値を取る引数の場合は外部変数optargにその値を格納する
     case 'i':
@@ -419,12 +194,7 @@ int main(int argc, char** argv)
     showVector(*i);
   }  
 
-
   
-  cout << "Algorithm start!" << endl;
-    
-
-
   vector<int> cap_filled(NUM_DEPT);
   vector<int> result(NUM_PEOPLE);
   vector<int> suspend;

@@ -31,9 +31,9 @@ simple: $(SIMPLE_OBJS)
 greedy: $(GREEDY_OBJS)
 	$(CC) $(FINAL_CFLAGS) -o $(GREEDY_BINARY) $<
 
-main.o: node.h arrange.h myutil.h
-simple.o: node.h
-greedy.o: node.h
+main.o: node.h arrange.h common.h
+simple.o: node.h common.h
+greedy.o: node.h common.h
 
 clean:
 	rm -r $(BINARY) *.o *~

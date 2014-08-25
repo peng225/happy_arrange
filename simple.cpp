@@ -16,6 +16,7 @@
 #include <boost/foreach.hpp>
 
 #include "node.h"
+#include "common.h"
 
 using std::cout;
 using std::cerr;
@@ -30,159 +31,6 @@ using std::stoi;
 using std::ifstream;
 using std::swap;
 using std::iter_swap;
-
-
-
-// void removeInferiorNode(list<Node> &q, const multiset<int> &depts)
-// {
-//   for(list<Node>::iterator i = begin(q);
-//       i != end(q); i++){
-//     if(i->getDepts() == depts){
-//       i = q.erase(i);
-//       i--;
-//     }
-//   }
-// }
-
-// 重心を計算する
-vector<int> computeCenter(const vector<vector<int> > &choices)
-{
-  assert(choices.size() != 0);
-  vector<int> center(choices.at(0).size());
-
-  for(int j = 0; j < (int)center.size(); j++){
-    int sum = 0;
-    for(vector<vector<int> >::const_iterator i = begin(choices);
-	i != end(choices); i++){
-      sum += i->at(j);
-    }
-    center.at(j) = sum / choices.size();
-  }
-  
-  return center;
-}
-
-// ２つのベクトルのユークリッド距離を計算する
-double computeDistance(vector<int> a, vector<int> b)
-{
-  if(a.size() != b.size()){
-    cerr << "Different size!" << endl;
-    exit(1);
-  }
-
-  double dist = 0;
-  for(int i = 0; i < (int)a.size(); i++){
-    dist += (a.at(i) - b.at(i)) * (a.at(i) - b.at(i));
-  }
-  dist /= a.size();
-  return dist;
-}
-
-// centerに最も近いベクトルの情報を返す
-pair<int, vector<int> >
-getNearestVector(const vector<int> &center,
-		 vector<vector<int> >::const_iterator b,
-		 vector<vector<int> >::const_iterator e)
-{
-  pair<int, vector<int> > target_info;
-  target_info.second.resize(center.size());
-
-  double dist = std::numeric_limits<double>::max();
-  for(vector<vector<int> >::const_iterator i = b;
-      i != e; i++){
-    double tmp_dist = computeDistance(*i, center);
-    if(tmp_dist < dist){
-      dist = tmp_dist;      
-      target_info.first = distance(b, i);
-      target_info.second = *i;
-    }
-  }
-
-  return target_info;
-}
-
-// ベクトルの中身を列挙する
-void showVector(const vector<int> &v)
-{
-  for(vector<int>::const_iterator i = begin(v); i != end(v); i++){
-    cout << *i;
-    if(distance(i, end(v)) != 1){
-      cout << ", ";
-    }else{
-      cout << endl;
-    }
-  }
-}
-
-// ベクトルの要素の総和を返す
-int sum(vector<int>::const_iterator b, vector<int>::const_iterator e)
-{
-  int sum = 0;
-  for(vector<int>::const_iterator i = b; i != e; i++){
-    sum += *i;
-  }
-  return sum;
-}
-
-// masterの値を元にfollowerの値をソートする
-// アルゴリズムはクイックソートに準ずる
-void sortFollowerWithMaster(vector<int>::iterator m_b,
-			    vector<int>::iterator m_e,
-			    vector<int>::iterator f_b,
-			    vector<int>::iterator f_e)
-{
-  if(distance(m_b, m_e) != distance(f_b, f_e)){
-    cerr << "Error: Length of master and follower must be the same." << endl;
-    exit(1);
-  }
-  
-  if(distance(m_b, m_e) <= 1){
-    return;
-  }
-
-  vector<int>::iterator m_l  = m_b;
-  vector<int>::iterator m_r = m_e - 1;
-  vector<int>::iterator f_l  = f_b;
-  vector<int>::iterator f_r = f_e - 1;
-  int pivot = *m_r;
-
-  while(distance(m_l, m_r) > 0){
-    while(distance(m_l, m_r) > 0 && *m_l < pivot){
-      ++m_l;
-      ++f_l;
-    }
-    if(distance(m_l, m_r) == 0){
-      break;
-    }
-
-    while(distance(m_l, m_r) > 0 && pivot <= *m_r){
-      --m_r;
-      --f_r;
-    }
-    if(distance(m_l, m_r) == 0){
-      break;
-    }
-
-    iter_swap(m_l, m_r);
-    iter_swap(f_l, f_r);
-  }
-
-  iter_swap(m_l, m_e - 1);
-  iter_swap(f_l, f_e - 1);
-
-  sortFollowerWithMaster(m_b, m_l, f_b, f_l);
-  sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
-}
-
-void defaultSettings(int &tmp_NUM_CHOICES, vector<int> &scores)
-{
-  tmp_NUM_CHOICES = 3;
-  scores.resize(tmp_NUM_CHOICES + 1);
-  scores[0] = 5;
-  scores[1] = 3;
-  scores[2] = 2;
-  scores[3] = 0;
-}
 
 
 int main(int argc, char** argv)
@@ -297,7 +145,7 @@ int main(int argc, char** argv)
   showVector(capacity);
 
   // 部署の定員の総和が人数になっているかチェック
-  if(sum(begin(capacity), end(capacity)) != NUM_PEOPLE){
+  if(std::accumulate(begin(capacity), end(capacity), 0) != NUM_PEOPLE){
     cerr << "Summation of capacities of all department must be equal to the number of people." << endl;
     exit(1);
   }  
