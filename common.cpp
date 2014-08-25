@@ -48,7 +48,6 @@ double computeDistance(const vector<int> &a, const vector<int> &b)
   return dist;
 }
 
-// ベクトルの中身を列挙する
 void showVector(const vector<int> &v)
 {
   for(vector<int>::const_iterator i = begin(v); i != end(v); i++){
