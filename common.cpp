@@ -1,5 +1,13 @@
 #include "common.h"
 
+void trimAndSplit(string target, string delim,
+		  list<string> &list_string)
+{
+  boost::trim(target);
+  boost::split(list_string, target, boost::is_any_of(delim),
+	       boost::algorithm::token_compress_on);
+}
+
 void defaultSettings(int &tmp_NUM_CHOICES, vector<int> &scores)
 {
   tmp_NUM_CHOICES = 3;
@@ -36,7 +44,7 @@ int getUpperBound(int nd, int np, const vector<int> &scores,
 double computeDistance(const vector<int> &a, const vector<int> &b)
 {
   if(a.size() != b.size()){
-    cerr << "Different size!" << endl;
+    cerr << "Error: Different size vectors are given." << endl;
     exit(1);
   }
 

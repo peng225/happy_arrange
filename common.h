@@ -2,11 +2,20 @@
 
 #include <iostream>
 #include <vector>
+#include <list>
+#include <string>
+
+#include <boost/algorithm/string.hpp>
 
 using std::cout;
 using std::cerr;
 using std::endl;
 using std::vector;
+using std::list;
+using std::string;
+
+extern void trimAndSplit(string target, string delim,
+			 list<string> &list_string);
 
 extern void defaultSettings(int &tmp_NUM_CHOICES, vector<int> &scores);
 

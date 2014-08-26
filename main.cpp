@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <boost/dynamic_bitset.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
@@ -28,6 +29,7 @@ using std::string;
 using std::stoi;
 using std::ifstream;
 
+using boost::dynamic_bitset;
 
 int main(int argc, char** argv)
 {
@@ -61,26 +63,31 @@ int main(int argc, char** argv)
     case 's':
       // 各志望のスコアを設定 
       {	
-	string delim(":");
+	const string delim(":");
         list<string> list_string;
 	scores.resize(0);
 	boost::split(list_string, optarg, boost::is_any_of(delim));
-	BOOST_FOREACH(string s, list_string) {
-	  scores.push_back(stoi(s));	  
-        }
+	try{
+	  BOOST_FOREACH(string s, list_string) {
+	    scores.push_back(stoi(s));	  
+	  }
+	}catch(std::invalid_argument &e){
+	  cerr << "Error: Failed to convert the command line parameter into integer." << endl;
+	  exit(1);
+	}
 
 	// スコアがすべて正であるかチェック
 	BOOST_FOREACH(int num, scores){
 	  if(num <= 0){
-	    cerr << "Scores must be a positive number." << endl;
+	    cerr << "Error: Scores must be a positive number." << endl;
 	    return 1;
 	  }
 	}
 
 	// スコアの間の順序が正しいかチェック
 	for(int i = 0; i < (int)scores.size() - 1; i++){
-	  if(scores[i] < scores[i + 1]){
-	    cerr << "Wrong order between scores." << endl;
+	  if(scores[i] <= scores[i + 1]){
+	    cerr << "Error: Wrong order between scores." << endl;
 	    return 1;
 	  }
 	}
@@ -110,39 +117,87 @@ int main(int argc, char** argv)
   // 入力ファイルを開く
   std::ifstream ifs(inputFileName);  
   if(ifs.fail()){
-    std::cerr << "Failed to open the file." << std::endl;
+    std::cerr << "Error: Failed to open the file." << std::endl;
     exit(1);
   }
 
   string tstr;
 
   // 人数を読み込む
-  int tmp_NUM_PEOPLE;
+  int tmp_NUM_PEOPLE = 0;
+  const string delim(" \t");  
+  list<string> list_string;  
   getline(ifs, tstr);
-  tmp_NUM_PEOPLE = stoi(tstr);  
+  trimAndSplit(tstr, delim, list_string);
+  if(list_string.size() != 1){
+    cerr << "Error: Bad data for the number of people." << endl;
+    exit(1);
+  }
+  try{
+    tmp_NUM_PEOPLE = stoi(tstr);  
+  }catch(std::invalid_argument &e){
+    cerr << "Error: Failed to convert the input into integer." << endl;
+    exit(1);
+  }
   const int NUM_PEOPLE = tmp_NUM_PEOPLE;
+
+  if(NUM_PEOPLE <= 0){
+    cerr << "Error: The number of people must be positive." << endl;
+    exit(1);
+  }
   
   // 部署数を読み込む
+  list_string.clear();
   int tmp_NUM_DEPT;
   getline(ifs, tstr);
-  tmp_NUM_DEPT = stoi(tstr);
+  trimAndSplit(tstr, delim, list_string);
+  if(list_string.size() != 1){
+    cerr << "Error: Bad data for the number of department." << endl;
+    exit(1);
+  }
+  try{
+    tmp_NUM_DEPT = stoi(tstr);
+  }catch(std::invalid_argument &e){
+    cerr << "Error: Failed to convert the input into integer." << endl;
+    exit(1);
+  }
   const int NUM_DEPT = tmp_NUM_DEPT;
+
+  if(NUM_DEPT <= 0){
+    cerr << "Error: The number of department must be positive." << endl;
+    exit(1);
+  }
   
   cout << tmp_NUM_PEOPLE << ", " << tmp_NUM_DEPT << endl;
 
 
   // 各部署の定員を読み込む
+  list_string.clear();
   vector<int> capacity(NUM_DEPT);   
   for(vector<int>::iterator i = begin(capacity); i != end(capacity); i++){    
     getline(ifs, tstr);
-    *i = stoi(tstr);
+    trimAndSplit(tstr, delim, list_string);
+    if(list_string.size() != 1){
+      cerr << "Error: Bad data for the capacity of each department." << endl;
+      exit(1);
+    }
+    try{ 
+      *i = stoi(tstr);
+    }catch(std::invalid_argument &e){
+      cerr << "Error: Failed to convert the input into integer." << endl;
+      exit(1);
+    }
+    if(*i <= 0){
+      cerr << "Error: Capacity of each department must be positive." << endl;
+      exit(1);
+    }
   }
   cout << "capacity:" << endl;
   showVector(capacity);
 
   // 部署の定員の総和が人数になっているかチェック
   if(std::accumulate(begin(capacity), end(capacity), 0) != NUM_PEOPLE){
-    cerr << "Summation of capacities of all department must be equal to the number of people." << endl;
+    cerr << "Error: Summation of capacities of all department must be equal to the number of people." << endl;
     exit(1);
   }  
 
@@ -161,21 +216,35 @@ int main(int argc, char** argv)
 
   // 志望度ベクトルの値を読み込む
   for(vector<vector<int> >::iterator i = begin(choices);
-      i != end(choices); i++){    
-    string delim(" ");  
+      i != end(choices); i++){
     list<string> list_string;
-    getline(ifs, tstr);        
-    boost::split(list_string, tstr, boost::is_any_of(delim));
+    getline(ifs, tstr);
+    trimAndSplit(tstr, delim, list_string);
     if((int)list_string.size() != NUM_CHOICES){
       cerr << "Error: The size of score list is wrong." << endl;
       exit(1);
     }
+
+    dynamic_bitset<> isSelected(NUM_DEPT);
     
     for(list<string>::iterator j = begin(list_string);
 	j != end(list_string); j++){
       // 各人のj番目の志望を読み込む
-      int dept = stoi(*j);
-      i->at(dept) = scores.at(distance(begin(list_string), j));
+      int dept = 0;
+      try{
+	dept = stoi(*j);
+      }catch(std::invalid_argument &e){
+	cerr << "Error: Failed to convert the input into integer." << endl;
+	exit(1);
+      }
+      assert(0 <= dept && dept < NUM_DEPT);
+      if(!isSelected.test(dept)){
+	i->at(dept) = scores.at(distance(begin(list_string), j));
+	isSelected.set(dept);
+      }else{
+	cerr << "Error: Multiple choices of one department." << endl;
+	exit(1);
+      }
     }
   }
 
