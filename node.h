@@ -12,9 +12,13 @@ private:
   int depth;
   int score;
   vector<int> history;
-  multiset<int> depts;
+  /* multiset<int> depts; */
+  vector<int> depts;
 public:
- Node(int d) : depth(d), score(0), history({}), depts({}) {}
+ Node(int d, int nd) : depth(d), score(0), history({}), depts({})
+    {
+      depts.resize(nd);
+    }
 
   void addHistory(int hist)
   {
@@ -38,7 +42,8 @@ public:
   
   void addDept(int dept)
   {
-    depts.insert(dept);
+    /* depts.insert(dept); */
+    depts.at(dept)++;
   }
   
   int getDepth() const
@@ -54,10 +59,15 @@ public:
 
   int getNumDept(int dept) const
   {
-    return depts.count(dept);
+    /* return depts.count(dept); */
+    return depts.at(dept);
   }
 
-  const multiset<int>& getDepts() const
+  /* const multiset<int>& getDepts() const */
+  /* { */
+  /*   return depts; */
+  /* } */
+  const vector<int>& getDepts() const
   {
     return depts;
   }

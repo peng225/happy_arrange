@@ -118,7 +118,7 @@ vector<int> computeCenter(const vector<vector<int> > &choices)
   return center;
 }
 
-void rmInferiorNodes(list<Node> &q, const map<multiset<int>, int> &score_table)
+void rmInferiorNodes(list<Node> &q, const map<vector<int>, int> &score_table)
 {
   assert(!q.empty());
   for(list<Node>::iterator i = begin(q);
@@ -168,12 +168,12 @@ void arrange(const vector<int> &scores,
   showVector(center);
   
   // 枝狩り幅優先探索のためのlistに空のルートノード(深さ0)を入れる
-  Node root(0);
+  Node root(0, choices.front().size());
   list<Node> q;
   q.push_back(root);
 
   // これまでに選択した部署の集合をキーとし、スコアをバリューとしたマップ
-  map<multiset<int>, int> score_table;        
+  map<vector<int>, int> score_table;        
   double scoreMean = getScoreMean(scores, choices.front().size());
   double scoreVariance = getScoreVariance(scores, choices.front().size());
   
@@ -239,8 +239,8 @@ void arrange(const vector<int> &scores,
 	// もしこれまでに選択された部署の集合が未登録なら登録	
 	if(score_table.find(newNode.getDepts()) == end(score_table)){
 	  // if(cutOff <= (score_table.find(node.getDepts()) != end(score_table)
-	  if(cutOff <= (node.getDepts().empty()
-			? 0 : score_table.at(node.getDepts()))
+	  if(cutOff <= (node.getDepth() == 0 ? // node.getDepts().empty()
+			0 : score_table.at(node.getDepts()))
 	     + target.at(i)){
 	    // 履歴を更新
 	    newNode.addHistory(i);
@@ -251,7 +251,7 @@ void arrange(const vector<int> &scores,
 	      showVector(newNode.getHistory());
 	    }
 
-	    if(node.getDepts().empty()){
+	    if(node.getDepth() == 0){
 	      score_table[newNode.getDepts()] = target.at(i);
 	    }else{
 	      score_table[newNode.getDepts()]
