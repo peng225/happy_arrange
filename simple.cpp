@@ -185,7 +185,7 @@ int main(int argc, char** argv)
   }
 
   // 枝狩り幅優先探索のためのlistに空のルートノード(深さ0)を入れる
-  Node root(0);
+  Node root(0, NUM_DEPT);
   list<Node> q;
   q.push_back(root);
 
