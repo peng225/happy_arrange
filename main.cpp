@@ -43,9 +43,10 @@ int main(int argc, char** argv)
   
   int opt;
   bool verbose = false;
+  bool hoplessCut = false;
   char inputFileName[100];
   // getoptの返り値は見付けたオプション
-  while((opt = getopt(argc, argv, "hvi:s:"))!=-1){
+  while((opt = getopt(argc, argv, "hvci:s:"))!=-1){
     switch(opt){
       // 値をとらないオプション
     case 'h':          
@@ -53,6 +54,10 @@ int main(int argc, char** argv)
       exit(0);
     case 'v':
       verbose = true;
+      break;
+    case 'c':
+      // 入力ファイル名の設定
+      hoplessCut = true;
       break;
       
       // 値を取る引数の場合は外部変数optargにその値を格納する
@@ -98,7 +103,8 @@ int main(int argc, char** argv)
 	scores.push_back(0);
 	
 	break;
-      }
+      }    
+      
       /* 以下二つのcaseは意味がないようだ.
 	 getoptが直接エラーを出力してくれるから.
 	 プログラムを終了するなら意味があるかも知れない */
@@ -258,7 +264,11 @@ int main(int argc, char** argv)
   int score = 0;
 
   // アルゴリズムの本体
-  arrange(scores, capacity, choices, choicesID, result, score, verbose);
+  list<Node> q;
+  q = pdpSearch(scores, capacity, choices, choicesID, verbose, hoplessCut);
+  pdpSelect(q, result, score);  
+  sortFollowerWithMaster(begin(choicesID), end(choicesID),
+			 begin(result), end(result));
     
 
   // 空行を挿入

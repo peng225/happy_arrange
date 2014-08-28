@@ -153,13 +153,12 @@ getNearestVector(const vector<int> &center,
   return target_info;
 }
 
-void arrange(const vector<int> &scores,
-	     vector<int> &capacity,
-	     vector<vector<int> > &choices,
-	     vector<int> &choicesID,
-	     vector<int> &result,
-	     int &score,
-	     bool verbose)
+list<Node> pdpSearch(const vector<int> &scores,
+		     vector<int> &capacity,
+		     vector<vector<int> > &choices,
+		     vector<int> &choicesID,
+		     bool verbose,
+		     bool hoplessCut)
 {
   // 全志望度ベクトルの重心を計算  
   vector<int> center(scores.size());
@@ -208,8 +207,11 @@ void arrange(const vector<int> &scores,
       カットオフ値をここで決めておく。
       この値は現在のqの内容から推測する。
     */
-    double cutOff = getCutOffLowerBound(q, scoreMean, scoreVariance,
-					d, choices.size());
+    double cutOff = 0;
+    if(hoplessCut){
+      cutOff = getCutOffLowerBound(q, scoreMean, scoreVariance,
+			    d, choices.size());
+    }
     
     int numRemoved = 0;
 
@@ -238,8 +240,7 @@ void arrange(const vector<int> &scores,
 	
 	// もしこれまでに選択された部署の集合が未登録なら登録	
 	if(score_table.find(newNode.getDepts()) == end(score_table)){
-	  // if(cutOff <= (score_table.find(node.getDepts()) != end(score_table)
-	  if(cutOff <= (node.getDepth() == 0 ? // node.getDepts().empty()
+	  if(!hoplessCut || cutOff <= (node.getDepth() == 0 ? 
 			0 : score_table.at(node.getDepts()))
 	     + target.at(i)){
 	    // 履歴を更新
@@ -272,7 +273,7 @@ void arrange(const vector<int> &scores,
 	// 既存のものよりスコアが高い場合は登録	  
 	else if(score_table.at(newNode.getDepts())
 		< score_table.at(node.getDepts()) + target.at(i)){
-	  if(cutOff <= score_table.at(node.getDepts()) + target.at(i)){
+	  if(!hoplessCut || cutOff <= score_table.at(node.getDepts()) + target.at(i)){
 	    // 履歴を更新
 	    newNode.addHistory(i);
 	    // 自分が持つ部署集合のスコアを記録
@@ -297,7 +298,13 @@ void arrange(const vector<int> &scores,
     
     cout << "rm: " << numRemoved << endl;
   }
+  return q;
+}
 
+void pdpSelect(list<Node> &q,	  
+	  vector<int> &result,
+	  int &score)
+{
   score = 0;
   while(!q.empty()){
     Node node = q.front();
@@ -306,9 +313,5 @@ void arrange(const vector<int> &scores,
       score = node.getScore();
       result = node.getHistory();
     }
-  }
-
-  // ID順に結果をソート
-  sortFollowerWithMaster(begin(choicesID), end(choicesID),
-			 begin(result), end(result));
+  }  
 }

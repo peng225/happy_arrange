@@ -76,10 +76,15 @@ extern pair<int, vector<int> >
 // NUM_CHOICES == scores.size()
 // NUM_PEOPLE == choices.size()
 // NUM_DEPT == choices.front().size()
-extern void arrange(const vector<int> &scores,
-		    vector<int> &capacity,
-		    vector<vector<int> > &choices,
-		    vector<int> &choicesID,
-		    vector<int> &result,
-		    int &score,
-		    bool verbose);
+// Pseudo Dynamic Programmingの探索フェイズ
+extern list<Node> pdpSearch(const vector<int> &scores,
+			    vector<int> &capacity,
+			    vector<vector<int> > &choices,
+			    vector<int> &choicesID,
+			    bool verbose,
+			    bool hoplessCut);
+
+// Pseudo Dynamic Programmingの選択フェイズ
+extern void pdpSelect(list<Node> &q,	  
+		      vector<int> &result,
+		      int &score);
