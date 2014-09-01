@@ -55,6 +55,11 @@ extern void sortFollowerWithMaster(vector<int>::iterator m_b,
 				   vector<int>::iterator f_b,
 				   vector<int>::iterator f_e);
 
+extern void sortFollowerWithMaster(vector<vector<int> >::iterator m_b,
+				   vector<vector<int> >::iterator m_e,
+				   vector<int>::iterator f_b,
+				   vector<int>::iterator f_e);
+
 // 望みが薄いノードを切り落とすためのしきい値を計算する
 extern double getCutOffLowerBound(list<Node> &q,
 				  double scoreMean, double scoreVariance,

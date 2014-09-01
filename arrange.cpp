@@ -83,6 +83,54 @@ void sortFollowerWithMaster(vector<int>::iterator m_b,
   sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
 }
 
+void sortFollowerWithMaster(vector<vector<int> >::iterator m_b,
+			    vector<vector<int> >::iterator m_e,
+			    vector<int>::iterator f_b,
+			    vector<int>::iterator f_e)
+{
+  if(distance(m_b, m_e) != distance(f_b, f_e)){
+    cerr << "Error: Length of master and follower must be the same." << endl;
+    exit(1);
+  }
+  
+  if(distance(m_b, m_e) <= 1){
+    return;
+  }
+
+  vector<vector<int> >::iterator m_l  = m_b;
+  vector<vector<int> >::iterator m_r = m_e - 1;
+  vector<int>::iterator f_l  = f_b;
+  vector<int>::iterator f_r = f_e - 1;
+  vector<int> pivot = *m_r;
+
+  while(distance(m_l, m_r) > 0){
+    while(distance(m_l, m_r) > 0 && *m_l < pivot){
+      ++m_l;
+      ++f_l;
+    }
+    if(distance(m_l, m_r) == 0){
+      break;
+    }
+
+    while(distance(m_l, m_r) > 0 && pivot <= *m_r){
+      --m_r;
+      --f_r;
+    }
+    if(distance(m_l, m_r) == 0){
+      break;
+    }
+
+    iter_swap(m_l, m_r);
+    iter_swap(f_l, f_r);
+  }
+
+  iter_swap(m_l, m_e - 1);
+  iter_swap(f_l, f_e - 1);
+
+  sortFollowerWithMaster(m_b, m_l, f_b, f_l);
+  sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
+}
+
 double getCutOffLowerBound(list<Node> &q,
 			   double scoreMean, double scoreVariance,
 			   int d, int numPeople)
@@ -161,10 +209,10 @@ list<Node> pdpSearch(const vector<int> &scores,
 		     bool hoplessCut)
 {
   // 全志望度ベクトルの重心を計算  
-  vector<int> center(scores.size());
-  center = computeCenter(choices);
-  cout << "center:" << endl;
-  showVector(center);
+  // vector<int> center(scores.size());
+  // center = computeCenter(choices);
+  // cout << "center:" << endl;
+  // showVector(center);
   
   // 枝狩り幅優先探索のためのlistに空のルートノード(深さ0)を入れる
   Node root(0, choices.front().size());
@@ -183,15 +231,18 @@ list<Node> pdpSearch(const vector<int> &scores,
       cout << "depth: " << d << endl;
     }
     // 全志望度ベクトルの重心に最も近い志望度ベクトルを選ぶ
-    pair<int, vector<int> > targetInfo
-      = getNearestVector(center, begin(choices) + d, end(choices));
+    // pair<int, vector<int> > targetInfo
+      // = getNearestVector(center, begin(choices) + d, end(choices));
+      // = getNearestVector(center, begin(choices) + d, begin(choices)+d+1);
     // これから注目するベクトル
-    vector<int> target = targetInfo.second;
+    // vector<int> target = targetInfo.second;
 
     // 選択したベクトルをchoicesから削除
     // choices.erase(begin(choices) + targetInfo.first);
-    swap(choices.at(d), choices.at(d + targetInfo.first));
-    swap(choicesID.at(d), choicesID.at(d + targetInfo.first));
+    // swap(choices.at(d), choices.at(d + targetInfo.first));
+    // swap(choicesID.at(d), choicesID.at(d + targetInfo.first));
+
+    vector<int> target = choices.at(d);
 
     if(verbose){
       cout << choicesID.at(d) << ": ";
