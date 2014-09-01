@@ -149,22 +149,22 @@ double getCutOffLowerBound(list<Node> &q,
   return specMn - 2.0 * specSd / (d + 1);
 }
 
-vector<int> computeCenter(const vector<vector<int> > &choices)
-{
-  assert(choices.size() != 0);
-  vector<int> center(choices.at(0).size());
+// vector<int> computeCenter(const vector<vector<int> > &choices)
+// {
+//   assert(choices.size() != 0);
+//   vector<int> center(choices.at(0).size());
 
-  for(int j = 0; j < (int)center.size(); j++){
-    int sum = 0;
-    for(vector<vector<int> >::const_iterator i = begin(choices);
-	i != end(choices); i++){
-      sum += i->at(j);
-    }
-    center.at(j) = sum / choices.size();
-  }
+//   for(int j = 0; j < (int)center.size(); j++){
+//     int sum = 0;
+//     for(vector<vector<int> >::const_iterator i = begin(choices);
+// 	i != end(choices); i++){
+//       sum += i->at(j);
+//     }
+//     center.at(j) = sum / choices.size();
+//   }
   
-  return center;
-}
+//   return center;
+// }
 
 void rmInferiorNodes(list<Node> &q, const map<vector<int>, int> &score_table)
 {
@@ -179,27 +179,27 @@ void rmInferiorNodes(list<Node> &q, const map<vector<int>, int> &score_table)
   }
 }
 
-pair<int, vector<int> >
-getNearestVector(const vector<int> &center,
-		 vector<vector<int> >::const_iterator b,
-		 vector<vector<int> >::const_iterator e)
-{
-  pair<int, vector<int> > target_info;
-  target_info.second.resize(center.size());
+// pair<int, vector<int> >
+// getNearestVector(const vector<int> &center,
+// 		 vector<vector<int> >::const_iterator b,
+// 		 vector<vector<int> >::const_iterator e)
+// {
+//   pair<int, vector<int> > target_info;
+//   target_info.second.resize(center.size());
 
-  double dist = std::numeric_limits<double>::max();
-  for(vector<vector<int> >::const_iterator i = b;
-      i != e; i++){
-    double tmp_dist = computeDistance(*i, center);
-    if(tmp_dist < dist){
-      dist = tmp_dist;      
-      target_info.first = distance(b, i);
-      target_info.second = *i;
-    }
-  }
+//   double dist = std::numeric_limits<double>::max();
+//   for(vector<vector<int> >::const_iterator i = b;
+//       i != e; i++){
+//     double tmp_dist = computeDistance(*i, center);
+//     if(tmp_dist < dist){
+//       dist = tmp_dist;      
+//       target_info.first = distance(b, i);
+//       target_info.second = *i;
+//     }
+//   }
 
-  return target_info;
-}
+//   return target_info;
+// }
 
 list<Node> pdpSearch(const vector<int> &scores,
 		     vector<int> &capacity,
