@@ -266,7 +266,7 @@ int main(int argc, char** argv)
   // アルゴリズムの本体
   list<Node> q;
   sortFollowerWithMaster(begin(choices), end(choices),
-			 begin(choicesID), end(choicesID));
+  			 begin(choicesID), end(choicesID));
   q = pdpSearch(scores, capacity, choices, choicesID, verbose, hoplessCut);
   pdpSelect(q, result, score);  
   sortFollowerWithMaster(begin(choicesID), end(choicesID),

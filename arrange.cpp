@@ -232,13 +232,13 @@ list<Node> pdpSearch(const vector<int> &scores,
     }
     // 全志望度ベクトルの重心に最も近い志望度ベクトルを選ぶ
     // pair<int, vector<int> > targetInfo
-      // = getNearestVector(center, begin(choices) + d, end(choices));
-      // = getNearestVector(center, begin(choices) + d, begin(choices)+d+1);
-    // これから注目するベクトル
+    //   // = getNearestVector(center, begin(choices) + d, end(choices));
+    //   = getNearestVector(center, begin(choices) + d, begin(choices)+d+1);
+    // // これから注目するベクトル
     // vector<int> target = targetInfo.second;
 
-    // 選択したベクトルをchoicesから削除
-    // choices.erase(begin(choices) + targetInfo.first);
+    // // 選択したベクトルをchoicesから削除
+    // // choices.erase(begin(choices) + targetInfo.first);
     // swap(choices.at(d), choices.at(d + targetInfo.first));
     // swap(choicesID.at(d), choicesID.at(d + targetInfo.first));
 
