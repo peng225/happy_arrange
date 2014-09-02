@@ -280,7 +280,7 @@ int main(int argc, char** argv)
   showVector(result);
 
   int upper = getUpperBound(NUM_DEPT, NUM_PEOPLE, scores, choices, capacity);
-  cout << "theoretical upper: " << endl << upper << endl;
+  cout << "theoretical upper bound: " << endl << upper << endl;
   
   // 全体の幸福度を表示
   cout << "total happiness: " << endl << score << endl;
