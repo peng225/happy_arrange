@@ -42,7 +42,6 @@ public:
   
   void addDept(int dept)
   {
-    /* depts.insert(dept); */
     depts.at(dept)++;
   }
   
@@ -59,14 +58,9 @@ public:
 
   int getNumDept(int dept) const
   {
-    /* return depts.count(dept); */
     return depts.at(dept);
   }
 
-  /* const multiset<int>& getDepts() const */
-  /* { */
-  /*   return depts; */
-  /* } */
   const vector<int>& getDepts() const
   {
     return depts;

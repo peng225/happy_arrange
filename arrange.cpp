@@ -149,23 +149,6 @@ double getCutOffLowerBound(list<Node> &q,
   return specMn - 2.0 * specSd / (d + 1);
 }
 
-// vector<int> computeCenter(const vector<vector<int> > &choices)
-// {
-//   assert(choices.size() != 0);
-//   vector<int> center(choices.at(0).size());
-
-//   for(int j = 0; j < (int)center.size(); j++){
-//     int sum = 0;
-//     for(vector<vector<int> >::const_iterator i = begin(choices);
-// 	i != end(choices); i++){
-//       sum += i->at(j);
-//     }
-//     center.at(j) = sum / choices.size();
-//   }
-  
-//   return center;
-// }
-
 void rmInferiorNodes(list<Node> &q, const map<vector<int>, int> &score_table)
 {
   assert(!q.empty());
@@ -179,43 +162,16 @@ void rmInferiorNodes(list<Node> &q, const map<vector<int>, int> &score_table)
   }
 }
 
-// pair<int, vector<int> >
-// getNearestVector(const vector<int> &center,
-// 		 vector<vector<int> >::const_iterator b,
-// 		 vector<vector<int> >::const_iterator e)
-// {
-//   pair<int, vector<int> > target_info;
-//   target_info.second.resize(center.size());
-
-//   double dist = std::numeric_limits<double>::max();
-//   for(vector<vector<int> >::const_iterator i = b;
-//       i != e; i++){
-//     double tmp_dist = computeDistance(*i, center);
-//     if(tmp_dist < dist){
-//       dist = tmp_dist;      
-//       target_info.first = distance(b, i);
-//       target_info.second = *i;
-//     }
-//   }
-
-//   return target_info;
-// }
-
 list<Node> pdpSearch(const vector<int> &scores,
 		     vector<int> &capacity,
 		     vector<vector<int> > &choices,
 		     vector<int> &choicesID,
 		     bool verbose,
-		     bool hoplessCut)
+		     bool hopelessCut)
 {
-  // 全志望度ベクトルの重心を計算  
-  // vector<int> center(scores.size());
-  // center = computeCenter(choices);
-  // cout << "center:" << endl;
-  // showVector(center);
-  
   // 枝狩り幅優先探索のためのlistに空のルートノード(深さ0)を入れる
   Node root(0, choices.front().size());
+  // 幅優先探索に使用するqueue
   list<Node> q;
   q.push_back(root);
 
@@ -230,18 +186,8 @@ list<Node> pdpSearch(const vector<int> &scores,
       cout << endl;    
       cout << "depth: " << d << endl;
     }
-    // 全志望度ベクトルの重心に最も近い志望度ベクトルを選ぶ
-    // pair<int, vector<int> > targetInfo
-    //   // = getNearestVector(center, begin(choices) + d, end(choices));
-    //   = getNearestVector(center, begin(choices) + d, begin(choices)+d+1);
-    // // これから注目するベクトル
-    // vector<int> target = targetInfo.second;
 
-    // // 選択したベクトルをchoicesから削除
-    // // choices.erase(begin(choices) + targetInfo.first);
-    // swap(choices.at(d), choices.at(d + targetInfo.first));
-    // swap(choicesID.at(d), choicesID.at(d + targetInfo.first));
-
+    // d人目の志望度ベクトル
     vector<int> target = choices.at(d);
 
     if(verbose){
@@ -251,15 +197,13 @@ list<Node> pdpSearch(const vector<int> &scores,
 
     // 実際の処理に入る前に劣っているノードを削除する
     rmInferiorNodes(q, score_table);
-    
-    // rmHopelessNodes(q, d, choices.size());
 
     /*
       カットオフ値をここで決めておく。
       この値は現在のqの内容から推測する。
     */
     double cutOff = 0;
-    if(hoplessCut){
+    if(hopelessCut){
       cutOff = getCutOffLowerBound(q, scoreMean, scoreVariance,
 			    d, choices.size());
     }
@@ -267,87 +211,50 @@ list<Node> pdpSearch(const vector<int> &scores,
     int numRemoved = 0;
 
     assert(!q.empty());
-    cout << "d, q: " << d << ", " << q.size() << endl;
+    cout << "depth, queue size: " << d << ", " << q.size() << endl;
 
     // 先頭要素の深さがdである間
     while(q.front().getDepth() == d){
       assert(!q.empty());
-      // if(q.front().getScore() < score_table[q.front().getDepts()]){
-      // 	q.erase(begin(q));
-      // 	continue;
-      // }
+      // queueの先頭要素を取り出す
       Node node = q.front();
       q.erase(begin(q));      
       for(int i = 0; i < (int)choices.front().size(); i++){
 	// 部署iがすでに定員に達していたら
 	if(node.getNumDept(i) == capacity.at(i)){
 	  continue;
+	}	
+
+	// 枝刈り閾値よりスコアが小さければスキップ
+	if(hopelessCut &&
+	   cutOff > (node.getDepth() == 0 ?
+		     target.at(i) :
+		     score_table.at(node.getDepts())) + target.at(i)){
+	  numRemoved++;
+	  continue;
 	}
+
 	// 取り出したノードよりも深さを１つ増やした新規ノード情報を作成
 	Node newNode = node;
 	newNode.incrementDepth();
 	// 現在注目している人がi番目の部署を選んだという情報を新規ノードに加える
 	newNode.addDept(i);
 	
-	// もしこれまでに選択された部署の集合が未登録なら登録	
+	// もしこれまでに選択された部署の集合が未登録なら
 	if(score_table.find(newNode.getDepts()) == end(score_table)){
-	  if(!hoplessCut || cutOff <= (node.getDepth() == 0 ? 
-			0 : score_table.at(node.getDepts()))
-	     + target.at(i)){
-	    // 履歴を更新
-	    newNode.addHistory(i);
-	    // 自分が持つ部署集合のスコアを記録
-	    // cout << "i: " << i << endl;
-	    if(verbose){
-	      cout << "new: ";
-	      showVector(newNode.getHistory());
-	    }
-
-	    if(node.getDepth() == 0){
-	      score_table[newNode.getDepts()] = target.at(i);
-	    }else{
-	      score_table[newNode.getDepts()]
-		= score_table.at(node.getDepts()) + target.at(i);
-	    }
-	    newNode.setScore(score_table.at(newNode.getDepts()));
-	  
-	    if(verbose){
-	      cout << "new score: " << newNode.getScore() << endl;
-	    }
-	  
-	    // 新規ノードをlistに入れる
-	    q.push_back(newNode);	    
-	  }else{
-	    numRemoved++;
-	  }
+	  addNewState(i, verbose, node, target, newNode, score_table, q, true);
 	}
-	// 既存のものよりスコアが高い場合は登録	  
+	// 既存のものよりスコアが高ければ
 	else if(score_table.at(newNode.getDepts())
 		< score_table.at(node.getDepts()) + target.at(i)){
-	  if(!hoplessCut || cutOff <= score_table.at(node.getDepts()) + target.at(i)){
-	    // 履歴を更新
-	    newNode.addHistory(i);
-	    // 自分が持つ部署集合のスコアを記録
-	    if(verbose){
-	      cout << "upd: ";
-	      showVector(newNode.getHistory());
-	    }
-	    score_table[newNode.getDepts()]
-	      = score_table.at(node.getDepts()) + target.at(i);
-	    newNode.setScore(score_table.at(newNode.getDepts()));
-	    if(verbose){
-	      cout << "upd score: " << newNode.getScore() << endl;
-	    }
-	    // 新規ノードをlistに入れる
-	    q.push_back(newNode);	    
-	  }else{
-	    numRemoved++;
-	  }
+	  addNewState(i, verbose, node, target, newNode, score_table, q, false);
 	}
       }
     }
-    
-    cout << "rm: " << numRemoved << endl;
+
+    if(hopelessCut){
+      cout << "# of removed node: " << numRemoved << endl;
+    }
   }
   return q;
 }
@@ -365,4 +272,44 @@ void pdpSelect(list<Node> &q,
       result = node.getHistory();
     }
   }  
+}
+
+
+void addNewState(int dept, bool verbose,
+		 const Node &node, const vector<int> &target,
+		 Node &newNode,			
+		 map<vector<int>, int> &score_table,
+		 list<Node> &q,
+		 bool isNew)
+{
+  // 履歴を更新
+  newNode.addHistory(dept);
+  if(verbose){
+    if(isNew){
+      cout << "new: ";
+    }else{
+      cout << "update: ";
+    }
+    showVector(newNode.getHistory());
+  }
+  // 自分が持つ部署集合のスコアを記録
+  if(node.getDepth() == 0){
+    score_table[newNode.getDepts()] = target.at(dept);
+  }else{
+    score_table[newNode.getDepts()]
+      = score_table.at(node.getDepts()) + target.at(dept);
+  }
+  
+  newNode.setScore(score_table.at(newNode.getDepts()));
+	  
+  if(verbose){
+    if(isNew){
+      cout << "new score: " << newNode.getScore() << endl;
+    }else{
+      cout << "updated score: " << newNode.getScore() << endl;
+    }
+  }
+	  
+  // 新規ノードをlistに入れる
+  q.push_back(newNode);      
 }

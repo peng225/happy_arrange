@@ -78,18 +78,22 @@ extern pair<int, vector<int> >
 		   vector<vector<int> >::const_iterator b,
 		   vector<vector<int> >::const_iterator e);
 
-// NUM_CHOICES == scores.size()
-// NUM_PEOPLE == choices.size()
-// NUM_DEPT == choices.front().size()
 // Pseudo Dynamic Programmingの探索フェイズ
 extern list<Node> pdpSearch(const vector<int> &scores,
 			    vector<int> &capacity,
 			    vector<vector<int> > &choices,
 			    vector<int> &choicesID,
 			    bool verbose,
-			    bool hoplessCut);
+			    bool hopelessCut);
 
 // Pseudo Dynamic Programmingの選択フェイズ
 extern void pdpSelect(list<Node> &q,	  
 		      vector<int> &result,
 		      int &score);
+
+extern void addNewState(int dept, bool verbose,
+			const Node &node, const vector<int> &target,
+			Node &newNode,			
+			map<vector<int>, int> &score_table,
+			list<Node> &q,
+			bool isNew);
