@@ -256,6 +256,7 @@ list<Node> pdpSearch(const vector<int> &scores,
       cout << "# of removed node: " << numRemoved << endl;
     }
   }
+  cout << "final queue size: " << q.size() << endl;
   return q;
 }
 

@@ -65,18 +65,10 @@ extern double getCutOffLowerBound(list<Node> &q,
 				  double scoreMean, double scoreVariance,
 				  int d, int numPeople);
 
-// 重心を計算する
-extern vector<int> computeCenter(const vector<vector<int> > &choices);
-
 
 // 同じ部署の選択集合を持つもののうち、劣っているノードをすべて削除する
 extern void rmInferiorNodes(list<Node> &q, const map<multiset<int>, int> &score_table);
 
-// centerに最も近いベクトルの情報を返す
-extern pair<int, vector<int> >
-  getNearestVector(const vector<int> &center,
-		   vector<vector<int> >::const_iterator b,
-		   vector<vector<int> >::const_iterator e);
 
 // Pseudo Dynamic Programmingの探索フェイズ
 extern list<Node> pdpSearch(const vector<int> &scores,
@@ -91,6 +83,7 @@ extern void pdpSelect(list<Node> &q,
 		      vector<int> &result,
 		      int &score);
 
+// queueに新しい状態を追加する
 extern void addNewState(int dept, bool verbose,
 			const Node &node, const vector<int> &target,
 			Node &newNode,			
