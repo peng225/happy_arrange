@@ -33,10 +33,10 @@ int main(int argc, char** argv)
   //コマンドライン引数のチェック  
   // 志望数と各志望度のスコアをセット
   
-  int tmp_NUM_CHOICES;
+  int numChoices;
   vector<int> scores;
 
-  defaultSettings(tmp_NUM_CHOICES, scores);  
+  defaultSettings(numChoices, scores);  
   
   int opt;
   bool verbose = false;
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 	  }
 	}
 
-	tmp_NUM_CHOICES = scores.size();
+	numChoices = scores.size();
 
 	// 希望から外れた場合のスコアは問答無用で0
 	scores.push_back(0);
@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     }
   }  
 
-  const int NUM_CHOICES = tmp_NUM_CHOICES;    
+  const int NUM_CHOICES = numChoices;    
 
   // 入力ファイルを開く
   std::ifstream ifs;

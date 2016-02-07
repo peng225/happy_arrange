@@ -31,6 +31,8 @@ using std::swap;
 
 using namespace boost::accumulators;
 
+const int CUT_OFF_COEF = 1.6;
+
 
 /*
   scoresの平均を求める。

@@ -8,23 +8,29 @@ void trimAndSplit(string target, string delim,
 	       boost::algorithm::token_compress_on);
 }
 
-void defaultSettings(int &tmp_NUM_CHOICES, vector<int> &scores)
+void defaultSettings(int &numChoices, vector<int> &scores)
 {
-  tmp_NUM_CHOICES = 3;
-  scores.resize(tmp_NUM_CHOICES + 1);
+  numChoices = 3;
+  scores.resize(numChoices + 1);
   scores[0] = 5;
   scores[1] = 3;
   scores[2] = 2;
   scores[3] = 0;
 }
 
+/*
+  スコアの理論的な上界の１つを求める。
+  上限ではないので注意。
+*/
 int getUpperBound(int nd, int np, const vector<int> &scores,
 		  const vector<vector<int> > &choices,
 		  const vector<int> &capacity)
 {  
   int upper = 0;
+  // 部署数分ループ
   for(int i = 0; i < nd; i++){
     int count = 0;
+    // 人数分ループ
     for(int j = 0; j < np; j++){
       if(choices.at(j).at(i) == scores.at(0)){
 	count++;
@@ -219,6 +225,7 @@ void readData(ifstream &ifs, const int NUM_CHOICES,
     }
   }
 
+  // 全員分の志望度ベクトルを表示
   cout << "choices:" << endl;
   for(vector<vector<int> >::iterator i = begin(choices);
       i != end(choices); i++){

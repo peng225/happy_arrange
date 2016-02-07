@@ -57,6 +57,11 @@ void sortFollowerWithMaster(vector<int>::iterator m_b,
   vector<int>::iterator f_r = f_e - 1;
   int pivot = *m_r;
 
+  /*
+    処理の本体。
+    masterとfollowerを一緒に更新していくので、
+    インクリメントやディクリメントの処理がペアになっている。
+  */
   while(distance(m_l, m_r) > 0){
     while(distance(m_l, m_r) > 0 && *m_l < pivot){
       ++m_l;
@@ -81,6 +86,7 @@ void sortFollowerWithMaster(vector<int>::iterator m_b,
   iter_swap(m_l, m_e - 1);
   iter_swap(f_l, f_e - 1);
 
+  // 再帰
   sortFollowerWithMaster(m_b, m_l, f_b, f_l);
   sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
 }
@@ -188,6 +194,7 @@ list<Node> pdpSearch(const vector<int> &scores,
     if(verbose){
       cout << endl;    
       cout << "depth: " << d << endl;
+      cout << "queue size: " << q.size() << endl;
     }
 
     // d人目の志望度ベクトル
@@ -209,6 +216,9 @@ list<Node> pdpSearch(const vector<int> &scores,
     if(hopelessCut){
       cutOff = getCutOffLowerBound(q, scoreMean, scoreVariance,
 			    d, choices.size());
+      if(verbose){
+        cout << "cutOff: " << cutOff << endl;
+      }
     }
     
     int numRemoved = 0;
@@ -225,6 +235,9 @@ list<Node> pdpSearch(const vector<int> &scores,
       for(int i = 0; i < (int)choices.front().size(); i++){
 	// 部署iがすでに定員に達していたら
 	if(node.getNumDept(i) == capacity.at(i)){
+          if(verbose){
+            cout << "Dept " << i << " has already reached the limit. Skip!" << endl;
+          }
 	  continue;
 	}	
 
@@ -234,6 +247,9 @@ list<Node> pdpSearch(const vector<int> &scores,
 		     target.at(i) :
 		     score_table.at(node.getDepts()) + target.at(i))){
 	  numRemoved++;
+          if(verbose){
+            cout << "The score is lower than the cut off value. Skip!" << endl;
+          }
 	  continue;
 	}
 
@@ -267,6 +283,7 @@ void pdpSelect(list<Node> &q,
 	  vector<int> &result,
 	  int &score)
 {
+  assert(!q.empty());
   score = 0;
   while(!q.empty()){
     Node node = q.front();
@@ -288,6 +305,7 @@ void addNewState(int dept, bool verbose,
 {
   // 履歴を更新
   newNode.addHistory(dept);
+
   if(verbose){
     if(isNew){
       cout << "new: ";
@@ -297,9 +315,12 @@ void addNewState(int dept, bool verbose,
     showVector(newNode.getHistory());
   }
   // 自分が持つ部署集合のスコアを記録
+  // 一人目の場合は単純にスコアをスコアテーブルに記録する
   if(node.getDepth() == 0){
     score_table[newNode.getDepts()] = target.at(dept);
-  }else{
+  }
+  // 二人目以降の現在のスコアテーブルの値に今回のスコアを足して、新たな状態を記録する
+  else{
     score_table[newNode.getDepts()]
       = score_table.at(node.getDepts()) + target.at(dept);
   }
