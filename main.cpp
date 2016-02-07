@@ -136,11 +136,11 @@ int main(int argc, char** argv)
   sortFollowerWithMaster(begin(choices), end(choices),
   			 begin(choicesID), end(choicesID));
   vector<int> result;
-  int score = 0;
-  list<Node> q;
+  Node node(choices.front().size());
   // アルゴリズムの本体
-  q = pdpSearch(scores, capacity, choices, choicesID, verbose, hopelessCut);
-  pdpSelect(q, result, score);  
+  node = pdpSearch(scores, capacity, choices, choicesID, verbose, hopelessCut);
+  // pdpSelect(q, result, score);  
+  result = node.getHistory();
   sortFollowerWithMaster(begin(choicesID), end(choicesID),
 			 begin(result), end(result));
     
@@ -155,7 +155,7 @@ int main(int argc, char** argv)
   cout << "theoretical upper bound: " << endl << upper << endl;
   
   // 全体の幸福度を表示
-  cout << "total happiness: " << endl << score << endl;
+  cout << "total happiness: " << endl << node.getScore() << endl;
 
   return 0;
 }

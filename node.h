@@ -9,13 +9,12 @@ using std::multiset;
 class Node
 {
 private:
-  int depth;
   int score;
   vector<int> history;
   /* multiset<int> depts; */
   vector<int> depts;
 public:
- Node(int d, int nd) : depth(d), score(0), history({}), depts({})
+ Node(int nd) : score(0), history({}), depts({})
     {
       depts.resize(nd);
     }
@@ -43,16 +42,6 @@ public:
   void addDept(int dept)
   {
     depts.at(dept)++;
-  }
-  
-  int getDepth() const
-  {
-    return depth;
-  }
-
-  void incrementDepth()
-  {
-    depth++;
   }
   
 

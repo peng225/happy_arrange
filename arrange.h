@@ -73,7 +73,7 @@ extern void rmInferiorNodes(list<Node> &q, const map<multiset<int>, int> &score_
 
 
 // Pseudo Dynamic Programmingの探索フェイズ
-extern list<Node> pdpSearch(const vector<int> &scores,
+extern Node pdpSearch(const vector<int> &scores,
 			    vector<int> &capacity,
 			    vector<vector<int> > &choices,
 			    vector<int> &choicesID,
@@ -92,3 +92,12 @@ extern void addNewState(int dept, bool verbose,
 			map<vector<int>, int> &score_table,
 			list<Node> &q,
 			bool isNew);
+
+extern void recursive(Node &node,
+                      map<vector<int>, int> &score_table,
+                      vector<int> &capacity,
+                      vector<vector<int> > &choices,
+                      unsigned int depth);
+
+extern void updateState(Node &node, Node &newNode, vector<int> &target,
+                 int dept, map<vector<int>, int> &score_table, bool isNew);
