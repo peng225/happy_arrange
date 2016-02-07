@@ -40,11 +40,13 @@ void sortFollowerWithMaster(vector<int>::iterator m_b,
 			    vector<int>::iterator f_b,
 			    vector<int>::iterator f_e)
 {
+  // masterとfollowerのサイズが一致するかチェック
   if(distance(m_b, m_e) != distance(f_b, f_e)){
     cerr << "Error: Length of master and follower must be the same." << endl;
     exit(1);
   }
   
+  // 再帰の終了条件
   if(distance(m_b, m_e) <= 1){
     return;
   }
@@ -143,10 +145,11 @@ double getCutOffLowerBound(list<Node> &q,
   }
   double mn = mean(acc);
   double va = variance(acc);
-  double specMn = mn + scoreMean;
+  // double specMn = mn + scoreMean;
   double specSd = sqrt(va + scoreVariance);
-  
-  return specMn - 2.0 * specSd / (d + 1);
+
+  // return specMn - 2.0 * specSd / (d + 1);
+  return mn - CUT_OFF_COEF * specSd / (d + 1);
 }
 
 void rmInferiorNodes(list<Node> &q, const map<vector<int>, int> &score_table)
@@ -229,7 +232,7 @@ list<Node> pdpSearch(const vector<int> &scores,
 	if(hopelessCut &&
 	   cutOff > (node.getDepth() == 0 ?
 		     target.at(i) :
-		     score_table.at(node.getDepts())) + target.at(i)){
+		     score_table.at(node.getDepts()) + target.at(i))){
 	  numRemoved++;
 	  continue;
 	}
