@@ -14,6 +14,9 @@ private:
   /* multiset<int> depts; */
   vector<int> depts;
 public:
+ Node() : score(0), history({}), depts({})
+    {
+    }
  Node(int nd) : score(0), history({}), depts({})
     {
       depts.resize(nd);

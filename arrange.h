@@ -99,5 +99,5 @@ extern void recursive(Node &node,
                       vector<vector<int> > &choices,
                       unsigned int depth);
 
-extern void updateState(Node &node, Node &newNode, vector<int> &target,
+extern void updateState(Node &node, Node &newNode, const vector<int> &target,
                  int dept, map<vector<int>, int> &score_table, bool isNew);

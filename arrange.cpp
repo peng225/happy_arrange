@@ -199,15 +199,18 @@ void recursive(Node &node,
           vector<vector<int> > &choices,
           unsigned int depth)
 {
-  if(depth == 0){
-    return;
-  }
+  // if(depth == 0){
+  //   return;
+  // }
+
+  vector<int> target = choices.at(choices.size() - depth);
+  Node newNode;
 
   Node maxNode(choices.front().size());
   for(int dept = 0; dept < (int)choices.front().size(); dept++){
-    if(depth >= choices.size() - 5){
-      cout << "Depth, Dept: " << depth << ", " << dept << endl;
-    }
+    // if(depth >= choices.size() - 2){
+    //   cout << "Depth, Dept: " << depth << ", " << dept << endl;
+    // }
     // 部署iがすでに定員に達していたら
     if(node.getNumDept(dept) == capacity.at(dept)){
       // if(verbose){
@@ -216,8 +219,7 @@ void recursive(Node &node,
       continue;
     }	
 
-    Node newNode = node;
-    vector<int> target = choices.at(choices.size() - depth);
+    newNode = node;
     newNode.addDept(dept);
     // // もしこれまでに選択された部署の集合が未登録なら
     if(score_table.find(newNode.getDepts()) == end(score_table)){
@@ -234,7 +236,9 @@ void recursive(Node &node,
     }
 
     // cout << "Recursion: " << depth << ", " << dept << endl;
-    recursive(newNode, score_table, capacity, choices, depth - 1);
+    if(depth > 1){
+      recursive(newNode, score_table, capacity, choices, depth - 1);
+    }
     if(maxNode.getScore() < newNode.getScore()){
       maxNode = newNode;
     }
@@ -242,7 +246,7 @@ void recursive(Node &node,
   node = maxNode;
 }
 
-void updateState(Node &node, Node &newNode, vector<int> &target,
+void updateState(Node &node, Node &newNode, const vector<int> &target,
                  int dept, map<vector<int>, int> &score_table, bool isNew)
 {
   // 履歴を更新
