@@ -195,8 +195,8 @@ Node pdpSearch(const vector<int> &scores,
 
 void recursive(Node &node,
           map<vector<int>, int> &score_table,
-          vector<int> &capacity,
-          vector<vector<int> > &choices,
+          const vector<int> &capacity,
+          const vector<vector<int> > &choices,
           unsigned int depth)
 {
   // if(depth == 0){
@@ -205,8 +205,8 @@ void recursive(Node &node,
 
   vector<int> target = choices.at(choices.size() - depth);
   Node newNode;
-
   Node maxNode(choices.front().size());
+
   for(int dept = 0; dept < (int)choices.front().size(); dept++){
     // if(depth >= choices.size() - 2){
     //   cout << "Depth, Dept: " << depth << ", " << dept << endl;

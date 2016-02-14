@@ -95,8 +95,8 @@ extern void addNewState(int dept, bool verbose,
 
 extern void recursive(Node &node,
                       map<vector<int>, int> &score_table,
-                      vector<int> &capacity,
-                      vector<vector<int> > &choices,
+                      const vector<int> &capacity,
+                      const vector<vector<int> > &choices,
                       unsigned int depth);
 
 extern void updateState(Node &node, Node &newNode, const vector<int> &target,

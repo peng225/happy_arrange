@@ -46,7 +46,6 @@ public:
   {
     depts.at(dept)++;
   }
-  
 
   int getNumDept(int dept) const
   {
