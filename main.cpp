@@ -135,12 +135,13 @@ int main(int argc, char** argv)
   // 部署番号が小さい部署を志望している人を先に処理するようにソート
   sortFollowerWithMaster(begin(choices), end(choices),
   			 begin(choicesID), end(choicesID));
-  vector<int> result;
+  list<int> result;
   Node node(choices.front().size());
   // アルゴリズムの本体
   node = pdpSearch(scores, capacity, choices, choicesID, verbose, hopelessCut);
   // pdpSelect(q, result, score);  
   result = node.getHistory();
+  result.reverse();
   sortFollowerWithMaster(begin(choicesID), end(choicesID),
 			 begin(result), end(result));
     
@@ -149,7 +150,7 @@ int main(int argc, char** argv)
   cout << endl;
 
   cout << "result:" << endl;
-  showVector(result);
+  showList(result);
 
   int upper = getUpperBound(NUM_DEPT, NUM_PEOPLE, scores, choices, capacity);
   cout << "theoretical upper bound: " << endl << upper << endl;

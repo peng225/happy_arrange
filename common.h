@@ -33,6 +33,7 @@ extern double computeDistance(const vector<int> &a, const vector<int> &b);
 
 // ベクトルの中身を列挙する
 extern void showVector(const vector<int> &v);
+extern void showList(const list<int> &v);
 
 // 入力ファイルを開く
 extern void openInputFile(char* inputFileName, ifstream &ifs);

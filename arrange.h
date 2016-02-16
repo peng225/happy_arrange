@@ -54,8 +54,10 @@ extern double getScoreVariance(const vector<int> &scores, int numDept);
 // アルゴリズムはクイックソートに準ずる
 extern void sortFollowerWithMaster(vector<int>::iterator m_b,
 				   vector<int>::iterator m_e,
-				   vector<int>::iterator f_b,
-				   vector<int>::iterator f_e);
+				   // vector<int>::iterator f_b,
+				   // vector<int>::iterator f_e);
+				   list<int>::iterator f_b,
+				   list<int>::iterator f_e);
 
 extern void sortFollowerWithMaster(vector<vector<int> >::iterator m_b,
 				   vector<vector<int> >::iterator m_e,
@@ -81,9 +83,9 @@ extern Node pdpSearch(const vector<int> &scores,
 			    bool hopelessCut);
 
 // Pseudo Dynamic Programmingの選択フェイズ
-extern void pdpSelect(list<Node> &q,	  
-		      vector<int> &result,
-		      int &score);
+// extern void pdpSelect(list<Node> &q,	  
+// 		      vector<int> &result,
+// 		      int &score);
 
 // queueに新しい状態を追加する
 extern void addNewState(int dept, bool verbose,

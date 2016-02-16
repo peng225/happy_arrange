@@ -37,8 +37,10 @@ double getScoreVariance(const vector<int> &scores, int numDept)
 
 void sortFollowerWithMaster(vector<int>::iterator m_b,
 			    vector<int>::iterator m_e,
-			    vector<int>::iterator f_b,
-			    vector<int>::iterator f_e)
+			    // vector<int>::iterator f_b,
+			    // vector<int>::iterator f_e)
+			    list<int>::iterator f_b,
+			    list<int>::iterator f_e)
 {
   // masterとfollowerのサイズが一致するかチェック
   if(distance(m_b, m_e) != distance(f_b, f_e)){
@@ -53,8 +55,11 @@ void sortFollowerWithMaster(vector<int>::iterator m_b,
 
   vector<int>::iterator m_l  = m_b;
   vector<int>::iterator m_r = m_e - 1;
-  vector<int>::iterator f_l  = f_b;
-  vector<int>::iterator f_r = f_e - 1;
+  // vector<int>::iterator f_l  = f_b;
+  // vector<int>::iterator f_r = f_e - 1;
+  list<int>::iterator f_l  = f_b;
+  list<int>::iterator f_r = --f_e;
+  ++f_e;
   int pivot = *m_r;
 
   /*
@@ -83,12 +88,17 @@ void sortFollowerWithMaster(vector<int>::iterator m_b,
     iter_swap(f_l, f_r);
   }
 
-  iter_swap(m_l, m_e - 1);
-  iter_swap(f_l, f_e - 1);
+  // iter_swap(m_l, m_e - 1);
+  // iter_swap(f_l, f_e - 1);
+  iter_swap(m_l, --m_e);
+  ++m_e;
+  iter_swap(f_l, --f_e);
+  ++f_e;
 
   // 再帰
   sortFollowerWithMaster(m_b, m_l, f_b, f_l);
-  sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
+  // sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
+  sortFollowerWithMaster(++m_l, m_e, ++f_l, f_e);
 }
 
 void sortFollowerWithMaster(vector<vector<int> >::iterator m_b,
@@ -203,7 +213,8 @@ void recursive(Node &node,
   //   return;
   // }
 
-  vector<int> target = choices.at(choices.size() - depth);
+  // vector<int> target = choices.at(choices.size() - depth);
+  int targetIdx = choices.size() - depth;
   Node newNode;
   Node maxNode(choices.front().size());
 
@@ -224,13 +235,16 @@ void recursive(Node &node,
     // // もしこれまでに選択された部署の集合が未登録なら
     if(score_table.find(newNode.getDepts()) == end(score_table)){
       // cout << "Update new Node." << endl;
-      updateState(node, newNode, target, dept, score_table, true);
+      // updateState(node, newNode, target, dept, score_table, true);
+      updateState(node, newNode, choices.at(targetIdx), dept, score_table, true);
     }
     // 既存のものよりスコアが高ければ
     else if(score_table.at(newNode.getDepts())
-        < score_table.at(node.getDepts()) + target.at(dept)){
+        // < score_table.at(node.getDepts()) + target.at(dept)){
+        < score_table.at(node.getDepts()) + choices.at(targetIdx).at(dept)){
       // cout << "Update existing Node." << endl;
-      updateState(node, newNode, target, dept, score_table, false);
+      // updateState(node, newNode, target, dept, score_table, false);
+      updateState(node, newNode, choices.at(targetIdx), dept, score_table, false);
     }else{
       continue;
     }
@@ -240,6 +254,8 @@ void recursive(Node &node,
       recursive(newNode, score_table, capacity, choices, depth - 1);
     }
     if(maxNode.getScore() < newNode.getScore()){
+      // 履歴を更新
+      newNode.addHistory(dept);
       maxNode = newNode;
     }
   }
@@ -250,7 +266,7 @@ void updateState(Node &node, Node &newNode, const vector<int> &target,
                  int dept, map<vector<int>, int> &score_table, bool isNew)
 {
   // 履歴を更新
-  newNode.addHistory(dept);
+  // newNode.addHistory(dept);
 
   // if(verbose){
      // if(isNew){
@@ -269,10 +285,10 @@ void updateState(Node &node, Node &newNode, const vector<int> &target,
   // 二人目以降の場合は現在のスコアテーブルの値に今回のスコアを足して、新たな状態を記録する
   else{
     score_table[newNode.getDepts()]
-      = score_table.at(node.getDepts()) + target.at(dept);
+      = score_table[node.getDepts()] + target.at(dept);
   }
   
-  newNode.setScore(score_table.at(newNode.getDepts()));
+  newNode.setScore(score_table[newNode.getDepts()]);
 	  
   // if(verbose){
      // if(isNew){
@@ -376,21 +392,21 @@ void updateState(Node &node, Node &newNode, const vector<int> &target,
 //  return q;
 //}
 
-void pdpSelect(list<Node> &q,	  
-	  vector<int> &result,
-	  int &score)
-{
-  assert(!q.empty());
-  score = 0;
-  while(!q.empty()){
-    Node node = q.front();
-    q.erase(begin(q));    
-    if(score < node.getScore()){
-      score = node.getScore();
-      result = node.getHistory();
-    }
-  }  
-}
+// void pdpSelect(list<Node> &q,	  
+// 	  vector<int> &result,
+// 	  int &score)
+// {
+//   assert(!q.empty());
+//   score = 0;
+//   while(!q.empty()){
+//     Node node = q.front();
+//     q.erase(begin(q));    
+//     if(score < node.getScore()){
+//       score = node.getScore();
+//       result = node.getHistory();
+//     }
+//   }  
+// }
 
 
 void addNewState(int dept, bool verbose,

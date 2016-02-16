@@ -74,6 +74,18 @@ void showVector(const vector<int> &v)
   }
 }
 
+void showList(const list<int> &v)
+{
+  for(list<int>::const_iterator i = begin(v); i != end(v); i++){
+    cout << *i;
+    if(distance(i, end(v)) != 1){
+      cout << ", ";
+    }else{
+      cout << endl;
+    }
+  }
+}
+
 void openInputFile(char* inputFileName, ifstream &ifs)
 {
   if(inputFileName[0] == 0){

@@ -2,15 +2,17 @@
 
 #include <vector>
 #include <set>
+#include <list>
 
 using std::vector;
 using std::multiset;
+using std::list;
 
 class Node
 {
 private:
   int score;
-  vector<int> history;
+  list<int> history;
   /* multiset<int> depts; */
   vector<int> depts;
 public:
@@ -27,7 +29,13 @@ public:
     history.push_back(hist);
   }
 
-  const vector<int>& getHistory() const
+  void delHistory()
+  {
+    history.pop_back();
+  }
+
+  // const vector<int>& getHistory() const
+  const list<int>& getHistory() const
   {
     return history;
   }
@@ -45,6 +53,11 @@ public:
   void addDept(int dept)
   {
     depts.at(dept)++;
+  }
+
+  void delDept(int dept)
+  {
+    depts.at(dept)--;
   }
 
   int getNumDept(int dept) const
