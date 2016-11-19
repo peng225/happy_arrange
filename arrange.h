@@ -1,21 +1,22 @@
 #pragma once
 
+#include "node.h"
+#include "common.h"
+
 #include <iostream>
 #include <vector>
 #include <list>
 #include <map>
+//#include <set>
 #include <algorithm>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/foreach.hpp>
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/statistics/min.hpp>
 #include <boost/accumulators/statistics/max.hpp>
 #include <boost/accumulators/statistics/variance.hpp>
 
-#include "node.h"
-#include "common.h"
 
 using std::list;
 using std::map;
@@ -27,11 +28,13 @@ using std::endl;
 using std::begin;
 using std::end;
 using std::swap;
+//using std::multiset;
 
 
 using namespace boost::accumulators;
 
-const int CUT_OFF_COEF = 1.6;
+const double CUT_OFF_COEF = 1.0;
+//const double CUT_OFF_COEF = 1.6;
 
 
 /*
@@ -69,7 +72,7 @@ extern double getCutOffLowerBound(list<Node> &q,
 
 
 // 同じ部署の選択集合を持つもののうち、劣っているノードをすべて削除する
-extern void rmInferiorNodes(list<Node> &q, const map<multiset<int>, int> &score_table);
+//extern void rmInferiorNodes(list<Node> &q, const map<multiset<int>, int> &score_table);
 
 
 // Pseudo Dynamic Programmingの探索フェイズ
@@ -92,3 +95,5 @@ extern void addNewState(int dept, bool verbose,
 		map<vector<int>, int> &score_table,
 		list<Node> &q,
 		bool isNew);
+
+

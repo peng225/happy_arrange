@@ -137,9 +137,10 @@ double getCutOffLowerBound(list<Node> &q, double scoreMean,
 	assert(numPeople != 1);
 
 	accumulator_set<int, stats<tag::variance, tag::mean> > acc;
-	BOOST_FOREACH(Node n, q){
-	acc(n.getScore());
-}
+	for(const auto& n: q)
+	{
+		acc(n.getScore());
+	}
 	double mn = mean(acc);
 	double va = variance(acc);
 	// double specMn = mn + scoreMean;
@@ -151,23 +152,23 @@ double getCutOffLowerBound(list<Node> &q, double scoreMean,
 
 void rmInferiorNodes(list<Node> &q, const map<vector<int>, int> &score_table) {
 	assert(!q.empty());
-	for (list<Node>::iterator i = begin(q); i != end(q); i++) {
+	for (list<Node>::iterator i = begin(q); i != end(q);) {
 		if (score_table.find(i->getDepts()) != end(score_table)
 				&& i->getScore() < score_table.at(i->getDepts())) {
 			i = q.erase(i);
-			i--;
+			continue;
 		}
+		++i;
 	}
 }
 
 list<Node> pdpSearch(const vector<int> &scores, vector<int> &capacity,
 		vector<vector<int> > &choices, vector<int> &choicesID, bool verbose,
 		bool hopelessCut) {
-	// 枝狩り幅優先探索のためのlistに空のルートノード(深さ0)を入れる
-	Node root(0, choices.front().size());
 	// 幅優先探索に使用するqueue
 	list<Node> q;
-	q.push_back(root);
+	// 枝狩り幅優先探索のためのlistに空のルートノード(深さ0)を入れる
+	q.emplace_back(0, choices.front().size());
 
 	// これまでに選択した部署の集合をキーとし、スコアをバリューとしたマップ
 	map<vector<int>, int> score_table;
@@ -215,11 +216,10 @@ list<Node> pdpSearch(const vector<int> &scores, vector<int> &capacity,
 		while (q.front().getDepth() == d) {
 			assert(!q.empty());
 			// queueの先頭要素を取り出す
-			Node node = q.front();
-			q.erase(begin(q));
+			Node* node = &q.front();
 			for (int i = 0; i < (int) choices.front().size(); i++) {
 				// 部署iがすでに定員に達していたら
-				if (node.getNumDept(i) == capacity.at(i)) {
+				if (node->getNumDept(i) == capacity.at(i)) {
 					if (verbose) {
 						cout << "Dept " << i
 								<< " has already reached the limit. Skip!"
@@ -231,9 +231,9 @@ list<Node> pdpSearch(const vector<int> &scores, vector<int> &capacity,
 				// 枝刈り閾値よりスコアが小さければスキップ
 				if (hopelessCut
 						&& cutOff
-								> (node.getDepth() == 0 ?
+								> (node->getDepth() == 0 ?
 										target.at(i) :
-										score_table.at(node.getDepts())
+										score_table.at(node->getDepts())
 												+ target.at(i))) {
 					numRemoved++;
 					if (verbose) {
@@ -245,23 +245,24 @@ list<Node> pdpSearch(const vector<int> &scores, vector<int> &capacity,
 				}
 
 				// 取り出したノードよりも深さを１つ増やした新規ノード情報を作成
-				Node newNode = node;
+				Node newNode = *node;
 				newNode.incrementDepth();
 				// 現在注目している人がi番目の部署を選んだという情報を新規ノードに加える
 				newNode.addDept(i);
 
 				// もしこれまでに選択された部署の集合が未登録なら
 				if (score_table.find(newNode.getDepts()) == end(score_table)) {
-					addNewState(i, verbose, node, target, newNode, score_table,
+					addNewState(i, verbose, *node, target, newNode, score_table,
 							q, true);
 				}
 				// 既存のものよりスコアが高ければ
 				else if (score_table.at(newNode.getDepts())
-						< score_table.at(node.getDepts()) + target.at(i)) {
-					addNewState(i, verbose, node, target, newNode, score_table,
+						< score_table.at(node->getDepts()) + target.at(i)) {
+					addNewState(i, verbose, *node, target, newNode, score_table,
 							q, false);
 				}
 			}
+			q.pop_front();
 		}
 
 		if (hopelessCut) {
@@ -321,5 +322,5 @@ void addNewState(int dept, bool verbose, const Node &node,
 	}
 
 	// 新規ノードをlistに入れる
-	q.push_back(newNode);
+	q.push_back(std::move(newNode));
 }

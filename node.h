@@ -1,22 +1,31 @@
 #pragma once
 
 #include <vector>
-#include <set>
 
 using std::vector;
-using std::multiset;
 
 class Node {
 private:
 	int depth;
 	int score;
 	vector<int> history;
-	/* multiset<int> depts; */
 	vector<int> depts;
 public:
 	Node(int d, int nd) :
 			depth(d), score(0), history( { }), depts( { }) {
 		depts.resize(nd);
+	}
+	Node(const Node &node) {
+		depth = node.depth;
+		score = node.score;
+		history = node.history;
+		depts = node.depts;
+	}
+	Node(Node &&node) {
+		depth = node.depth;
+		score = node.score;
+		history = std::move(node.history);
+		depts = std::move(node.depts);
 	}
 
 	void addHistory(int hist) {
@@ -36,14 +45,15 @@ public:
 	}
 
 	void addDept(int dept) {
-		depts.at(dept)++;}
+		++depts.at(dept);
+	}
 
 	int getDepth() const {
 		return depth;
 	}
 
 	void incrementDepth() {
-		depth++;
+		++depth;
 	}
 
 	int getNumDept(int dept) const {
