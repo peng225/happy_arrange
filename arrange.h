@@ -92,7 +92,7 @@ extern void pdpSelect(list<Node> &q,
 extern void addNewState(int dept, bool verbose,
 		const Node &node, const vector<int> &target,
 		Node &newNode,
-		map<vector<int>, int> &score_table,
+		map<vector<int>, list<Node>::iterator> &score_table,
 		list<Node> &q,
 		bool isNew);
 

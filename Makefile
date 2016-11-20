@@ -1,7 +1,7 @@
 #Makefile
 
-#CFLAGS = -g -c -march=native -std=c++1y -Wall -O3 -DNDEBUG
-CFLAGS = -g -c -march=native -std=c++1y -Wall -O3
+CFLAGS = -g -c -march=native -std=c++1y -Wall -O3 -DNDEBUG
+#CFLAGS = -g -c -march=native -std=c++1y -Wall -O3
 FINAL_CFLAGS = -g -march=native -std=c++1y -Wall -O3
 BINARY = happy
 SIMPLE_BINARY = simple

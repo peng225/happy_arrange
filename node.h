@@ -21,7 +21,7 @@ public:
 		history = node.history;
 		depts = node.depts;
 	}
-	Node(Node &&node) {
+	Node(Node &&node) noexcept {
 		depth = node.depth;
 		score = node.score;
 		history = std::move(node.history);

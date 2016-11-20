@@ -171,7 +171,7 @@ list<Node> pdpSearch(const vector<int> &scores, vector<int> &capacity,
 	q.emplace_back(0, choices.front().size());
 
 	// これまでに選択した部署の集合をキーとし、スコアをバリューとしたマップ
-	map<vector<int>, int> score_table;
+	map<vector<int>, list<Node>::iterator> score_table;
 	double scoreMean = getScoreMean(scores, choices.front().size());
 	double scoreVariance = getScoreVariance(scores, choices.front().size());
 
@@ -192,7 +192,7 @@ list<Node> pdpSearch(const vector<int> &scores, vector<int> &capacity,
 		}
 
 		// 実際の処理に入る前に劣っているノードを削除する
-		rmInferiorNodes(q, score_table);
+//		rmInferiorNodes(q, score_table);
 
 		/*
 		 カットオフ値をここで決めておく。
@@ -233,7 +233,7 @@ list<Node> pdpSearch(const vector<int> &scores, vector<int> &capacity,
 						&& cutOff
 								> (node->getDepth() == 0 ?
 										target.at(i) :
-										score_table.at(node->getDepts())
+										score_table.at(node->getDepts())->getScore()
 												+ target.at(i))) {
 					numRemoved++;
 					if (verbose) {
@@ -256,8 +256,9 @@ list<Node> pdpSearch(const vector<int> &scores, vector<int> &capacity,
 							q, true);
 				}
 				// 既存のものよりスコアが高ければ
-				else if (score_table.at(newNode.getDepts())
-						< score_table.at(node->getDepts()) + target.at(i)) {
+				else if (score_table.at(newNode.getDepts())->getScore()
+						< score_table.at(node->getDepts())->getScore() + target.at(i)) {
+					q.erase(score_table.at(newNode.getDepts()));
 					addNewState(i, verbose, *node, target, newNode, score_table,
 							q, false);
 				}
@@ -288,7 +289,7 @@ void pdpSelect(list<Node> &q, vector<int> &result, int &score) {
 
 void addNewState(int dept, bool verbose, const Node &node,
 		const vector<int> &target, Node &newNode,
-		map<vector<int>, int> &score_table, list<Node> &q, bool isNew) {
+		map<vector<int>, list<Node>::iterator> &score_table, list<Node> &q, bool isNew) {
 	// 履歴を更新
 	newNode.addHistory(dept);
 
@@ -301,17 +302,15 @@ void addNewState(int dept, bool verbose, const Node &node,
 		showVector(newNode.getHistory());
 	}
 	// 自分が持つ部署集合のスコアを記録
-	// 一人目の場合は単純にスコアをスコアテーブルに記録する
+	// 一人目の場合は単純にスコアを記録する
 	if (node.getDepth() == 0) {
-		score_table[newNode.getDepts()] = target.at(dept);
+		newNode.setScore(target.at(dept));
 	}
-	// 二人目以降の現在のスコアテーブルの値に今回のスコアを足して、新たな状態を記録する
+	// 二人目以降は現在のスコアテーブルの値に今回のスコアを足して、新たな状態を記録する
 	else {
-		score_table[newNode.getDepts()] = score_table.at(node.getDepts())
-				+ target.at(dept);
+		newNode.setScore(score_table.at(node.getDepts())->getScore()
+							+ target.at(dept));
 	}
-
-	newNode.setScore(score_table.at(newNode.getDepts()));
 
 	if (verbose) {
 		if (isNew) {
@@ -322,5 +321,9 @@ void addNewState(int dept, bool verbose, const Node &node,
 	}
 
 	// 新規ノードをlistに入れる
-	q.push_back(std::move(newNode));
+//	q.push_back(std::move(newNode));
+	q.push_back(newNode);
+	auto itr = end(q);
+	--itr;
+	score_table[newNode.getDepts()] = itr;
 }
