@@ -1,48 +1,77 @@
-#Makefile
+# Makefile
 
-CFLAGS = -g -c -march=native -std=c++1y -Wall -O3 -DNDEBUG
-#CFLAGS = -g -c -march=native -std=c++1y -Wall -O3
-FINAL_CFLAGS = -g -march=native -std=c++1y -Wall -O3
-BINARY = happy
-SIMPLE_BINARY = simple
-GREEDY_BINARY = greedy
-SHARED_OBJS = common.o
-OBJS = main.o arrange.o $(SHARED_OBJS)
-SIMPLE_OBJS = simple.o $(SHARED_OBJS)
-GREEDY_OBJS = greedy.o $(SHARED_OBJS)
+
+CFLAGS = -c -g -O3 -Wall -std=c++17 -flto -MMD -MP
+FINAL_CFLAGS = -g -O3 -Wall -std=c++17 -flto
+LDLIBS = 
+
+TARGET = happy_arrange
+
+SRC_DIR = ./src
+INC_DIR = ./include
+OBJ_DIR = ./obj
+
+SRCS = $(shell ls $(SRC_DIR)/*.cpp)
+OBJS = $(subst $(SRC_DIR), $(OBJ_DIR), $(SRCS:.cpp=.o))
+DEPS = $(OBJS:.o=.d)
+
+INCLUDE = -I $(INC_DIR)
+
+# for test
+TEST_CFLAGS = -c -g -O3 -Wall -std=c++17 -flto -MMD -MP
+TEST_FINAL_CFLAGS = -g -O3 -Wall -std=c++17 -flto
+TEST_LDLIBS = -lpthread -pthread -lgtest_main -lgtest
+
+TEST_TARGET = unittest
+
+TEST_SRC_DIR = ./test_src
+TEST_INC_DIR = ./test_include
+TEST_OBJ_DIR = ./test_obj
+
+TEST_SRCS = $(shell ls $(TEST_SRC_DIR)/*.cpp)
+TEST_OBJS = $(subst $(TEST_SRC_DIR), $(TEST_OBJ_DIR), $(TEST_SRCS:.cpp=.o))
+TEST_DEPS = $(TEST_OBJS:.o=.d)
+
+# テスト対象のオブジェクトファイルからmain関数を含むものを除く
+MAIN_SRC = main.cpp
+SRCS_WITHOUT_MAIN = $(shell find $(SRC_DIR) -name $(MAIN_SRC) -prune -o -name *.cpp -print)
+OBJS_WITHOUT_MAIN = $(subst $(SRC_DIR), $(OBJ_DIR), $(SRCS_WITHOUT_MAIN:.cpp=.o))
+
+TEST_INCLUDE = -I $(TEST_INC_DIR)
+
 CC = g++
 
-all: $(BINARY)
+all: $(TARGET)
 
-$(BINARY): $(OBJS)
-	$(CC) $(FINAL_CFLAGS) -o $(BINARY) $(OBJS)
+-include $(DEPS)
 
-main.o: main.cpp
-	$(CC) $(CFLAGS) $<
+$(TARGET): $(OBJS)
+	$(CC) $(INCLUDE) -o $@ $^ $(FINAL_CFLAGS) $(LDLIBS)
 
-arrange.o: arrange.cpp
-	$(CC) $(CFLAGS) $<
 
-common.o: common.cpp
-	$(CC) $(CFLAGS) $<
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@if [ ! -e $(OBJ_DIR) ] ; then mkdir $(OBJ_DIR) ; fi
+	$(CC) $(INCLUDE) -o $@ $< $(CFLAGS) $(LDLIBS)
 
-simple.o: simple.cpp
-	$(CC) $(CFLAGS) $<
+# for test
+test: $(TEST_TARGET)
 
-greedy.o: greedy.cpp
-	$(CC) $(CFLAGS) $<
+-include $(TEST_DEPS)
 
-simple: $(SIMPLE_OBJS)
-	$(CC) $(FINAL_CFLAGS) -o $(SIMPLE_BINARY) $(SIMPLE_OBJS)
+echo:
+	# echo $(TEST_SRCS)
+	# echo $(TEST_OBJS)
+	echo $(OBJS_WITHOUT_MAIN)
 
-greedy: $(GREEDY_OBJS)
-	$(CC) $(FINAL_CFLAGS) -o $(GREEDY_BINARY) $(GREEDY_OBJS)
+$(TEST_TARGET): $(TEST_OBJS) $(OBJS_WITHOUT_MAIN)
+	$(CC) $(TEST_INCLUDE) $(INCLUDE) -o $@ $^ $(TEST_FINAL_CFLAGS) $(TEST_LDLIBS)
 
-main.o: node.h arrange.h common.h
-arrange.o: arrange.h
-common.o: common.h
-simple.o: node.h common.h
-greedy.o: node.h common.h
+
+$(TEST_OBJ_DIR)/%.o: $(TEST_SRC_DIR)/%.cpp
+	@if [ ! -e $(TEST_OBJ_DIR) ] ; then mkdir $(TEST_OBJ_DIR) ; fi
+	$(CC) $(TEST_INCLUDE) $(INCLUDE) -o $@ $< $(TEST_CFLAGS) $(TEST_LDLIBS)
 
 clean:
-	rm -r $(BINARY) *.o *~
+	rm -f $(TARGET) $(OBJ_DIR)/* $(SRC_DIR)/*~ $(INC_DIR)/*~ $(TEST_TARGET) $(TEST_OBJ_DIR)/* $(TEST_DEPS) $(TEST_SRC_DIR)/*~ $(TEST_INC_DIR)/*~ ./*~
+
+.PHONY: all clean
