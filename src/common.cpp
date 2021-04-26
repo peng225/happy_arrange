@@ -16,7 +16,13 @@ int getUpperBound(int nd, int np, const std::vector<int> &scores,
                 count++;
             }
         }
-        // 定員を超える第一志望人員がいたら残念賞
+        /*
+          定員を超える第一志望人員がいた場合、
+          定員分は第0志望のスコア、
+          溢れた人は第1志望のスコアとする。
+          実際には溢れた人が第3志望以降になることもあるため、
+          これは合計スコアが増える方向に倒していることになる。
+        */
         if (capacity.at(i) < count) {
             upper += scores.at(0) * capacity.at(i);
             upper += scores.at(1) * (count - capacity.at(i));
