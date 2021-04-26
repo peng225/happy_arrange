@@ -11,9 +11,6 @@ using std::cerr;
 using std::endl;
 using std::begin;
 using std::end;
-using std::string;
-using std::stoi;
-using std::ifstream;
 
 int main(int argc, char** argv) {
     //コマンドライン引数のチェック
