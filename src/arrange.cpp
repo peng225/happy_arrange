@@ -1,329 +1,213 @@
-#include "arrange.h"
+#include <arrange.h>
+#include <stat.h>
+#include <common.h>
 
-double getScoreMean(const vector<int> &scores, int numDept) {
-	accumulator_set<int, stats<tag::mean> > acc;
+#include <boost/algorithm/string.hpp>
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
+#include <boost/accumulators/statistics/min.hpp>
+#include <boost/accumulators/statistics/max.hpp>
+#include <boost/accumulators/statistics/variance.hpp>
 
-	// scoresには希望が通らなかった場合のスコア(0)も含まれるので、それを除く
-	for (int i = 0; i < (int) (numDept - scores.size()) + 1; i++) {
-		acc(0);
-	}
+#include <iostream>
+#include <algorithm>
 
-	for (vector<int>::const_iterator i = begin(scores); i != end(scores); i++) {
-		acc(*i);
-	}
+using namespace boost::accumulators;
 
-	return mean(acc);
+double Arrange::getCutOffLowerBound(std::list<Node> &q, double scoreMean,
+        double scoreVariance, int d, int numPeople) {
+    assert(numPeople != 1);
+
+    accumulator_set<int, stats<tag::variance, tag::mean> > acc;
+    for(const auto& n: q)
+    {
+        acc(n.getScore());
+    }
+    double mn = mean(acc);
+    double va = variance(acc);
+    // double specMn = mn + scoreMean;
+    double specSd = sqrt(va + scoreVariance);
+
+    // return specMn - 2.0 * specSd / (d + 1);
+    return mn - CUT_OFF_COEF * specSd / (d + 1);
 }
 
-double getScoreVariance(const vector<int> &scores, int numDept) {
-	accumulator_set<int, stats<tag::variance> > acc;
-
-	// scoresには希望が通らなかった場合のスコア(0)も含まれるので、それを除く
-	for (int i = 0; i < (int) (numDept - scores.size()) + 1; i++) {
-		acc(0);
-	}
-
-	for (vector<int>::const_iterator i = begin(scores); i != end(scores); i++) {
-		acc(*i);
-	}
-
-	return variance(acc);
+void Arrange::rmInferiorNodes(std::list<Node> &q, const std::map<std::vector<int>, int> &score_table) {
+    assert(!q.empty());
+    for (std::list<Node>::iterator i = begin(q); i != end(q);) {
+        if (score_table.find(i->getDepts()) != end(score_table)
+                && i->getScore() < score_table.at(i->getDepts())) {
+            i = q.erase(i);
+            continue;
+        }
+        ++i;
+    }
 }
 
-void sortFollowerWithMaster(vector<int>::iterator m_b,
-		vector<int>::iterator m_e, vector<int>::iterator f_b,
-		vector<int>::iterator f_e) {
-	// masterとfollowerのサイズが一致するかチェック
-	if (distance(m_b, m_e) != distance(f_b, f_e)) {
-		cerr << "Error: Length of master and follower must be the same."
-				<< endl;
-		exit(1);
-	}
+std::list<Node> Arrange::pdpSearch(const std::vector<int> &scores, std::vector<int> &capacity,
+        std::vector<std::vector<int> > &choices, std::vector<int> &choicesID, bool verbose,
+        bool hopelessCut) {
+    // 幅優先探索に使用するqueue
+    std::list<Node> q;
+    // 枝狩り幅優先探索のためのstd::listに空のルートノード(深さ0)を入れる
+    q.emplace_back(0, choices.front().size());
 
-	// 再帰の終了条件
-	if (distance(m_b, m_e) <= 1) {
-		return;
-	}
+    // これまでに選択した部署の集合をキーとし、スコアをバリューとしたマップ
+    std::map<std::vector<int>, std::list<Node>::iterator> score_table;
+    Stat st;
+    double scoreMean = st.getScoreMean(scores, choices.front().size());
+    double scoreVariance = st.getScoreVariance(scores, choices.front().size());
 
-	vector<int>::iterator m_l = m_b;
-	vector<int>::iterator m_r = m_e - 1;
-	vector<int>::iterator f_l = f_b;
-	vector<int>::iterator f_r = f_e - 1;
-	int pivot = *m_r;
+    // 探索深さdが人数より小さい間
+    for (int d = 0; d < (int) choices.size(); d++) {
+        if (verbose) {
+            std::cout << std::endl;
+            std::cout << "depth: " << d << std::endl;
+            std::cout << "queue size: " << q.size() << std::endl;
+        }
 
-	/*
-	 処理の本体。
-	 masterとfollowerを一緒に更新していくので、
-	 インクリメントやディクリメントの処理がペアになっている。
-	 */
-	while (distance(m_l, m_r) > 0) {
-		while (distance(m_l, m_r) > 0 && *m_l < pivot) {
-			++m_l;
-			++f_l;
-		}
-		if (distance(m_l, m_r) == 0) {
-			break;
-		}
+        // d人目の志望度ベクトル
+        std::vector<int> target = choices.at(d);
 
-		while (distance(m_l, m_r) > 0 && pivot <= *m_r) {
-			--m_r;
-			--f_r;
-		}
-		if (distance(m_l, m_r) == 0) {
-			break;
-		}
+        if (verbose) {
+            std::cout << choicesID.at(d) << ": ";
+            showVector(target);
+        }
 
-		iter_swap(m_l, m_r);
-		iter_swap(f_l, f_r);
-	}
+        // 実際の処理に入る前に劣っているノードを削除する
+//        rmInferiorNodes(q, score_table);
 
-	iter_swap(m_l, m_e - 1);
-	iter_swap(f_l, f_e - 1);
+        /*
+         カットオフ値をここで決めておく。
+         この値は現在のqの内容から推測する。
+         */
+        double cutOff = 0;
+        if (hopelessCut) {
+            cutOff = getCutOffLowerBound(q, scoreMean, scoreVariance, d,
+                    choices.size());
+            if (verbose) {
+                std::cout << "cutOff: " << cutOff << std::endl;
+            }
+        }
 
-	// 再帰
-	sortFollowerWithMaster(m_b, m_l, f_b, f_l);
-	sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
+        int numRemoved = 0;
+
+        assert(!q.empty());
+        std::cout << "depth, queue size: " << d << ", " << q.size() << std::endl;
+
+        // 先頭要素の深さがdである間
+        while (q.front().getDepth() == d) {
+            assert(!q.empty());
+            // queueの先頭要素を取り出す
+            Node* node = &q.front();
+            for (int i = 0; i < (int) choices.front().size(); i++) {
+                // 部署iがすでに定員に達していたら
+                if (node->getNumDept(i) == capacity.at(i)) {
+                    if (verbose) {
+                        std::cout << "Dept " << i
+                                << " has already reached the limit. Skip!"
+                                << std::endl;
+                    }
+                    continue;
+                }
+
+                // 枝刈り閾値よりスコアが小さければスキップ
+                if (hopelessCut
+                        && cutOff
+                                > (node->getDepth() == 0 ?
+                                        target.at(i) :
+                                        score_table.at(node->getDepts())->getScore()
+                                                + target.at(i))) {
+                    numRemoved++;
+                    if (verbose) {
+                        std::cout
+                                << "The score is lower than the cut off value. Skip!"
+                                << std::endl;
+                    }
+                    continue;
+                }
+
+                // 取り出したノードよりも深さを１つ増やした新規ノード情報を作成
+                Node newNode = *node;
+                newNode.incrementDepth();
+                // 現在注目している人がi番目の部署を選んだという情報を新規ノードに加える
+                newNode.addDept(i);
+
+                // もしこれまでに選択された部署の集合が未登録なら
+                if (score_table.find(newNode.getDepts()) == end(score_table)) {
+                    addNewState(i, verbose, *node, target, newNode, score_table,
+                            q, true);
+                }
+                // 既存のものよりスコアが高ければ
+                else if (score_table.at(newNode.getDepts())->getScore()
+                        < score_table.at(node->getDepts())->getScore() + target.at(i)) {
+                    q.erase(score_table.at(newNode.getDepts()));
+                    addNewState(i, verbose, *node, target, newNode, score_table,
+                            q, false);
+                }
+            }
+            q.pop_front();
+        }
+
+        if (hopelessCut) {
+            std::cout << "# of removed node: " << numRemoved << std::endl;
+        }
+    }
+    std::cout << "final queue size: " << q.size() << std::endl;
+    return q;
 }
 
-void sortFollowerWithMaster(vector<vector<int> >::iterator m_b,
-		vector<vector<int> >::iterator m_e, vector<int>::iterator f_b,
-		vector<int>::iterator f_e) {
-	if (distance(m_b, m_e) != distance(f_b, f_e)) {
-		cerr << "Error: Length of master and follower must be the same."
-				<< endl;
-		exit(1);
-	}
-
-	if (distance(m_b, m_e) <= 1) {
-		return;
-	}
-
-	vector<vector<int> >::iterator m_l = m_b;
-	vector<vector<int> >::iterator m_r = m_e - 1;
-	vector<int>::iterator f_l = f_b;
-	vector<int>::iterator f_r = f_e - 1;
-	vector<int> pivot = *m_r;
-
-	while (distance(m_l, m_r) > 0) {
-		while (distance(m_l, m_r) > 0 && *m_l < pivot) {
-			++m_l;
-			++f_l;
-		}
-		if (distance(m_l, m_r) == 0) {
-			break;
-		}
-
-		while (distance(m_l, m_r) > 0 && pivot <= *m_r) {
-			--m_r;
-			--f_r;
-		}
-		if (distance(m_l, m_r) == 0) {
-			break;
-		}
-
-		iter_swap(m_l, m_r);
-		iter_swap(f_l, f_r);
-	}
-
-	iter_swap(m_l, m_e - 1);
-	iter_swap(f_l, f_e - 1);
-
-	sortFollowerWithMaster(m_b, m_l, f_b, f_l);
-	sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
+void Arrange::pdpSelect(std::list<Node> &q, std::vector<int> &result, int &score) {
+    assert(!q.empty());
+    score = 0;
+    while (!q.empty()) {
+        Node node = q.front();
+        q.erase(begin(q));
+        if (score < node.getScore()) {
+            score = node.getScore();
+            result = node.getHistory();
+        }
+    }
 }
 
-double getCutOffLowerBound(list<Node> &q, double scoreMean,
-		double scoreVariance, int d, int numPeople) {
-	assert(numPeople != 1);
+void Arrange::addNewState(int dept, bool verbose, const Node &node,
+        const std::vector<int> &target, Node &newNode,
+        std::map<std::vector<int>, std::list<Node>::iterator> &score_table, std::list<Node> &q, bool isNew) {
+    // 履歴を更新
+    newNode.addHistory(dept);
 
-	accumulator_set<int, stats<tag::variance, tag::mean> > acc;
-	for(const auto& n: q)
-	{
-		acc(n.getScore());
-	}
-	double mn = mean(acc);
-	double va = variance(acc);
-	// double specMn = mn + scoreMean;
-	double specSd = sqrt(va + scoreVariance);
+    if (verbose) {
+        if (isNew) {
+            std::cout << "new: ";
+        } else {
+            std::cout << "update: ";
+        }
+        showVector(newNode.getHistory());
+    }
+    // 自分が持つ部署集合のスコアを記録
+    // 一人目の場合は単純にスコアを記録する
+    if (node.getDepth() == 0) {
+        newNode.setScore(target.at(dept));
+    }
+    // 二人目以降は現在のスコアテーブルの値に今回のスコアを足して、新たな状態を記録する
+    else {
+        newNode.setScore(score_table.at(node.getDepts())->getScore()
+                            + target.at(dept));
+    }
 
-	// return specMn - 2.0 * specSd / (d + 1);
-	return mn - CUT_OFF_COEF * specSd / (d + 1);
+    if (verbose) {
+        if (isNew) {
+            std::cout << "new score: " << newNode.getScore() << std::endl;
+        } else {
+            std::cout << "updated score: " << newNode.getScore() << std::endl;
+        }
+    }
+
+    // 新規ノードをstd::listに入れる
+//    q.push_back(std::move(newNode));
+    q.emplace_back(newNode);
+    auto itr = end(q);
+    --itr;
+    score_table[newNode.getDepts()] = itr;
 }
 
-void rmInferiorNodes(list<Node> &q, const map<vector<int>, int> &score_table) {
-	assert(!q.empty());
-	for (list<Node>::iterator i = begin(q); i != end(q);) {
-		if (score_table.find(i->getDepts()) != end(score_table)
-				&& i->getScore() < score_table.at(i->getDepts())) {
-			i = q.erase(i);
-			continue;
-		}
-		++i;
-	}
-}
-
-list<Node> pdpSearch(const vector<int> &scores, vector<int> &capacity,
-		vector<vector<int> > &choices, vector<int> &choicesID, bool verbose,
-		bool hopelessCut) {
-	// 幅優先探索に使用するqueue
-	list<Node> q;
-	// 枝狩り幅優先探索のためのlistに空のルートノード(深さ0)を入れる
-	q.emplace_back(0, choices.front().size());
-
-	// これまでに選択した部署の集合をキーとし、スコアをバリューとしたマップ
-	map<vector<int>, list<Node>::iterator> score_table;
-	double scoreMean = getScoreMean(scores, choices.front().size());
-	double scoreVariance = getScoreVariance(scores, choices.front().size());
-
-	// 探索深さdが人数より小さい間
-	for (int d = 0; d < (int) choices.size(); d++) {
-		if (verbose) {
-			cout << endl;
-			cout << "depth: " << d << endl;
-			cout << "queue size: " << q.size() << endl;
-		}
-
-		// d人目の志望度ベクトル
-		vector<int> target = choices.at(d);
-
-		if (verbose) {
-			cout << choicesID.at(d) << ": ";
-			showVector(target);
-		}
-
-		// 実際の処理に入る前に劣っているノードを削除する
-//		rmInferiorNodes(q, score_table);
-
-		/*
-		 カットオフ値をここで決めておく。
-		 この値は現在のqの内容から推測する。
-		 */
-		double cutOff = 0;
-		if (hopelessCut) {
-			cutOff = getCutOffLowerBound(q, scoreMean, scoreVariance, d,
-					choices.size());
-			if (verbose) {
-				cout << "cutOff: " << cutOff << endl;
-			}
-		}
-
-		int numRemoved = 0;
-
-		assert(!q.empty());
-		cout << "depth, queue size: " << d << ", " << q.size() << endl;
-
-		// 先頭要素の深さがdである間
-		while (q.front().getDepth() == d) {
-			assert(!q.empty());
-			// queueの先頭要素を取り出す
-			Node* node = &q.front();
-			for (int i = 0; i < (int) choices.front().size(); i++) {
-				// 部署iがすでに定員に達していたら
-				if (node->getNumDept(i) == capacity.at(i)) {
-					if (verbose) {
-						cout << "Dept " << i
-								<< " has already reached the limit. Skip!"
-								<< endl;
-					}
-					continue;
-				}
-
-				// 枝刈り閾値よりスコアが小さければスキップ
-				if (hopelessCut
-						&& cutOff
-								> (node->getDepth() == 0 ?
-										target.at(i) :
-										score_table.at(node->getDepts())->getScore()
-												+ target.at(i))) {
-					numRemoved++;
-					if (verbose) {
-						cout
-								<< "The score is lower than the cut off value. Skip!"
-								<< endl;
-					}
-					continue;
-				}
-
-				// 取り出したノードよりも深さを１つ増やした新規ノード情報を作成
-				Node newNode = *node;
-				newNode.incrementDepth();
-				// 現在注目している人がi番目の部署を選んだという情報を新規ノードに加える
-				newNode.addDept(i);
-
-				// もしこれまでに選択された部署の集合が未登録なら
-				if (score_table.find(newNode.getDepts()) == end(score_table)) {
-					addNewState(i, verbose, *node, target, newNode, score_table,
-							q, true);
-				}
-				// 既存のものよりスコアが高ければ
-				else if (score_table.at(newNode.getDepts())->getScore()
-						< score_table.at(node->getDepts())->getScore() + target.at(i)) {
-					q.erase(score_table.at(newNode.getDepts()));
-					addNewState(i, verbose, *node, target, newNode, score_table,
-							q, false);
-				}
-			}
-			q.pop_front();
-		}
-
-		if (hopelessCut) {
-			cout << "# of removed node: " << numRemoved << endl;
-		}
-	}
-	cout << "final queue size: " << q.size() << endl;
-	return q;
-}
-
-void pdpSelect(list<Node> &q, vector<int> &result, int &score) {
-	assert(!q.empty());
-	score = 0;
-	while (!q.empty()) {
-		Node node = q.front();
-		q.erase(begin(q));
-		if (score < node.getScore()) {
-			score = node.getScore();
-			result = node.getHistory();
-		}
-	}
-}
-
-void addNewState(int dept, bool verbose, const Node &node,
-		const vector<int> &target, Node &newNode,
-		map<vector<int>, list<Node>::iterator> &score_table, list<Node> &q, bool isNew) {
-	// 履歴を更新
-	newNode.addHistory(dept);
-
-	if (verbose) {
-		if (isNew) {
-			cout << "new: ";
-		} else {
-			cout << "update: ";
-		}
-		showVector(newNode.getHistory());
-	}
-	// 自分が持つ部署集合のスコアを記録
-	// 一人目の場合は単純にスコアを記録する
-	if (node.getDepth() == 0) {
-		newNode.setScore(target.at(dept));
-	}
-	// 二人目以降は現在のスコアテーブルの値に今回のスコアを足して、新たな状態を記録する
-	else {
-		newNode.setScore(score_table.at(node.getDepts())->getScore()
-							+ target.at(dept));
-	}
-
-	if (verbose) {
-		if (isNew) {
-			cout << "new score: " << newNode.getScore() << endl;
-		} else {
-			cout << "updated score: " << newNode.getScore() << endl;
-		}
-	}
-
-	// 新規ノードをlistに入れる
-//	q.push_back(std::move(newNode));
-	q.push_back(newNode);
-	auto itr = end(q);
-	--itr;
-	score_table[newNode.getDepts()] = itr;
-}

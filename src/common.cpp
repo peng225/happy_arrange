@@ -4,8 +4,8 @@
  スコアの理論的な上界の１つを求める。
  上限ではないので注意。
  */
-int getUpperBound(int nd, int np, const vector<int> &scores,
-        const vector<vector<int> > &choices, const vector<int> &capacity) {
+int getUpperBound(int nd, int np, const std::vector<int> &scores,
+        const std::vector<std::vector<int> > &choices, const std::vector<int> &capacity) {
     int upper = 0;
     // 部署数分ループ
     for (int i = 0; i < nd; i++) {
@@ -27,9 +27,9 @@ int getUpperBound(int nd, int np, const vector<int> &scores,
     return upper;
 }
 
-double computeDistance(const vector<int> &a, const vector<int> &b) {
+double computeDistance(const std::vector<int> &a, const std::vector<int> &b) {
     if (a.size() != b.size()) {
-        cerr << "Error: Different size vectors are given." << endl;
+        std::cerr << "Error: Different size std::vectors are given." << std::endl;
         exit(1);
     }
 
@@ -41,14 +41,116 @@ double computeDistance(const vector<int> &a, const vector<int> &b) {
     return dist;
 }
 
-void showVector(const vector<int> &v) {
-    for (vector<int>::const_iterator i = begin(v); i != end(v); i++) {
-        cout << *i;
+void showVector(const std::vector<int> &v) {
+    for (std::vector<int>::const_iterator i = begin(v); i != end(v); i++) {
+        std::cout << *i;
         if (distance(i, end(v)) != 1) {
-            cout << ", ";
+            std::cout << ", ";
         } else {
-            cout << endl;
+            std::cout << std::endl;
         }
     }
+}
+
+void sortFollowerWithMaster(std::vector<int>::iterator m_b,
+        std::vector<int>::iterator m_e, std::vector<int>::iterator f_b,
+        std::vector<int>::iterator f_e) {
+    // masterとfollowerのサイズが一致するかチェック
+    if (distance(m_b, m_e) != distance(f_b, f_e)) {
+        std::cerr << "Error: Length of master and follower must be the same."
+                << std::endl;
+        exit(1);
+    }
+
+    // 再帰の終了条件
+    if (distance(m_b, m_e) <= 1) {
+        return;
+    }
+
+    std::vector<int>::iterator m_l = m_b;
+    std::vector<int>::iterator m_r = m_e - 1;
+    std::vector<int>::iterator f_l = f_b;
+    std::vector<int>::iterator f_r = f_e - 1;
+    int pivot = *m_r;
+
+    /*
+     処理の本体。
+     masterとfollowerを一緒に更新していくので、
+     インクリメントやディクリメントの処理がペアになっている。
+     */
+    while (distance(m_l, m_r) > 0) {
+        while (distance(m_l, m_r) > 0 && *m_l < pivot) {
+            ++m_l;
+            ++f_l;
+        }
+        if (distance(m_l, m_r) == 0) {
+            break;
+        }
+
+        while (distance(m_l, m_r) > 0 && pivot <= *m_r) {
+            --m_r;
+            --f_r;
+        }
+        if (distance(m_l, m_r) == 0) {
+            break;
+        }
+
+        iter_swap(m_l, m_r);
+        iter_swap(f_l, f_r);
+    }
+
+    iter_swap(m_l, m_e - 1);
+    iter_swap(f_l, f_e - 1);
+
+    // 再帰
+    sortFollowerWithMaster(m_b, m_l, f_b, f_l);
+    sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
+}
+
+void sortFollowerWithMaster(std::vector<std::vector<int> >::iterator m_b,
+        std::vector<std::vector<int> >::iterator m_e, std::vector<int>::iterator f_b,
+        std::vector<int>::iterator f_e) {
+    if (distance(m_b, m_e) != distance(f_b, f_e)) {
+        std::cerr << "Error: Length of master and follower must be the same."
+                << std::endl;
+        exit(1);
+    }
+
+    if (distance(m_b, m_e) <= 1) {
+        return;
+    }
+
+    std::vector<std::vector<int>>::iterator m_l = m_b;
+    std::vector<std::vector<int>>::iterator m_r = m_e - 1;
+    std::vector<int>::iterator f_l = f_b;
+    std::vector<int>::iterator f_r = f_e - 1;
+    std::vector<int> pivot = *m_r;
+
+    while (distance(m_l, m_r) > 0) {
+        while (distance(m_l, m_r) > 0 && *m_l < pivot) {
+            ++m_l;
+            ++f_l;
+        }
+        if (distance(m_l, m_r) == 0) {
+            break;
+        }
+
+        while (distance(m_l, m_r) > 0 && pivot <= *m_r) {
+            --m_r;
+            --f_r;
+        }
+        if (distance(m_l, m_r) == 0) {
+            break;
+        }
+
+        iter_swap(m_l, m_r);
+        iter_swap(f_l, f_r);
+    }
+
+    iter_swap(m_l, m_e - 1);
+    iter_swap(f_l, f_e - 1);
+
+    sortFollowerWithMaster(m_b, m_l, f_b, f_l);
+    sortFollowerWithMaster(m_l + 1, m_e, f_l + 1, f_e);
 }
 

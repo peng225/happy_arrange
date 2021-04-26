@@ -3,9 +3,11 @@
 
 CFLAGS = -c -g -O3 -Wall -std=c++17 -flto -MMD -MP
 FINAL_CFLAGS = -g -O3 -Wall -std=c++17 -flto
-LDLIBS = 
+LDLIBS =
 
 TARGET = happy_arrange
+SIMPLE_TARGET = simple
+GREEDY_TARGET = greedy
 
 SRC_DIR = ./src
 INC_DIR = ./include
@@ -14,6 +16,10 @@ OBJ_DIR = ./obj
 SRCS = $(shell ls $(SRC_DIR)/*.cpp)
 OBJS = $(subst $(SRC_DIR), $(OBJ_DIR), $(SRCS:.cpp=.o))
 DEPS = $(OBJS:.o=.d)
+
+SHARED_OBJS = $(OBJ_DIR)/common.o $(OBJ_DIR)/arg_parser.o
+SIMPLE_OBJS = $(OBJ_DIR)/simple.o $(SHARED_OBJS)
+GREEDY_OBJS = $(OBJ_DIR)/greedy.o $(SHARED_OBJS)
 
 INCLUDE = -I $(INC_DIR)
 
@@ -52,6 +58,19 @@ $(TARGET): $(OBJS)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@if [ ! -e $(OBJ_DIR) ] ; then mkdir $(OBJ_DIR) ; fi
 	$(CC) $(INCLUDE) -o $@ $< $(CFLAGS) $(LDLIBS)
+
+$(OBJ_DIR)/simple.o: $(SRC_DIR)/simple/simple.cpp
+	$(CC) $(INCLUDE) -o $@ $< $(CFLAGS) $(LDLIBS)
+
+$(OBJ_DIR)/greedy.o: $(SRC_DIR)/greedy/greedy.cpp
+	$(CC) $(INCLUDE) -o $@ $< $(CFLAGS) $(LDLIBS)
+
+$(SIMPLE_TARGET): $(SIMPLE_OBJS)
+	$(CC) -o $@ $^ $(FINAL_CFLAGS)
+
+$(GREEDY_TARGET): $(GREEDY_OBJS)
+	$(CC) -o $@ $^ $(FINAL_CFLAGS)
+
 
 # for test
 test: $(TEST_TARGET)

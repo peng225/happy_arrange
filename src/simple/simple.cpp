@@ -1,3 +1,5 @@
+#include <arg_parser.h>
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +13,7 @@
 #include <limits>
 #include <fstream>
 #include <algorithm>
+#include <numeric>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
@@ -38,8 +41,9 @@ int main(int argc, char** argv) {
 
 	int tmp_NUM_CHOICES;
 	vector<int> scores;
+    ArgParser ap;
 
-	defaultSettings(tmp_NUM_CHOICES, scores);
+	ap.genDefaultSettings(tmp_NUM_CHOICES, scores);
 
 	int opt;
 	bool verbose = false;

@@ -46,10 +46,11 @@ int main(int argc, char** argv) {
             end(choicesID));
     vector<int> result;
     int score = 0;
-    list<Node> q;
+    std::list<Node> q;
+    Arrange arrange;
     // アルゴリズムの本体
-    q = pdpSearch(scores, capacity, choices, choicesID, verbose, hopelessCut);
-    pdpSelect(q, result, score);
+    q = arrange.pdpSearch(scores, capacity, choices, choicesID, verbose, hopelessCut);
+    arrange.pdpSelect(q, result, score);
     sortFollowerWithMaster(begin(choicesID), end(choicesID), begin(result),
             end(result));
 
