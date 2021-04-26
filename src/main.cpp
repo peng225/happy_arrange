@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     // 志望数と各志望度のスコアをセット
 
     int numChoices;
-    vector<int> scores;
+    std::vector<int> scores;
     ArgParser ap;
 
     ap.genDefaultSettings(numChoices, scores);
@@ -34,8 +34,8 @@ int main(int argc, char** argv) {
     // 必要なデータを読み込む
     ReadInput ri;
     int numPeople, numDept;
-    vector<int> capacity, choicesID;
-    vector<vector<int> > choices;
+    std::vector<int> capacity, choicesID;
+    std::vector<std::vector<int> > choices;
     ri.readData(inputFileName, NUM_CHOICES, scores, numPeople, numDept,
                 capacity, choices, choicesID);
     const int NUM_PEOPLE = numPeople;
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     // 部署番号が小さい部署を志望している人を先に処理するようにソート
     sortFollowerWithMaster(begin(choices), end(choices), begin(choicesID),
             end(choicesID));
-    vector<int> result;
+    std::vector<int> result;
     int score = 0;
     std::list<Node> q;
     Arrange arrange;

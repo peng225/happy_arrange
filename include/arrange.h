@@ -1,7 +1,7 @@
 #pragma once
 
-#include "node.h"
-#include "common.h"
+#include <node.h>
+#include <common.h>
 
 #include <vector>
 #include <list>

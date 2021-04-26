@@ -6,8 +6,6 @@
 #include <list>
 #include <string>
 
-//#include <boost/algorithm/string.hpp>
-
 // ざっくりとした上界を計算
 extern int getUpperBound(int nd, int np, const std::vector<int> &scores,
 		const std::vector<std::vector<int>> &choices, const std::vector<int> &capacity);

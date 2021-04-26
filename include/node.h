@@ -2,14 +2,12 @@
 
 #include <vector>
 
-using std::vector;
-
 class Node {
 private:
 	int depth;
 	int score;
-	vector<int> history;
-	vector<int> depts;
+	std::vector<int> history;
+	std::vector<int> depts;
 public:
 	Node(int d, int nd) :
 			depth(d), score(0), history( { }), depts( { }) {
@@ -32,7 +30,7 @@ public:
 		history.push_back(hist);
 	}
 
-	const vector<int>& getHistory() const {
+	const std::vector<int>& getHistory() const {
 		return history;
 	}
 
@@ -60,7 +58,7 @@ public:
 		return depts.at(dept);
 	}
 
-	const vector<int>& getDepts() const {
+	const std::vector<int>& getDepts() const {
 		return depts;
 	}
 };
