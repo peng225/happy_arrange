@@ -26,7 +26,7 @@ happy_arrange
 通常は以下のように実行します。
 
 ```
-./happy -c -i path/to/input.txt
+./happy_arrange -c -i path/to/input.txt
 ```
 -cオプションを付けると、探索時に枝刈りを行います。
 入力ファイル名は-iオプションで指定して下さい。
@@ -48,6 +48,6 @@ n-1人目の第0希望 n-1人目の第1希望 ... n-1人目の第H-1希望
 実行時に-sオプションを指定して下さい。
 ```
 // 第五希望まで選択する場合
-./happy -s 8:5:3:2:1 -i path/to/input.txt
+./happy_arrange -s 8:5:3:2:1 -i path/to/input.txt
 ```
 このように、志望度が高い方の幸福度から順にコロン区切りで数値を並べて下さい。
