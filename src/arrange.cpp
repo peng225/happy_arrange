@@ -32,7 +32,7 @@ double Arrange::getCutOffLowerBound(std::list<Node> &q, double scoreMean,
 
 void Arrange::rmInferiorNodes(std::list<Node> &q, const std::map<std::vector<int>, int> &score_table) {
     assert(!q.empty());
-    for (std::list<Node>::iterator i = begin(q); i != end(q);) {
+    for (auto i = begin(q); i != end(q);) {
         if (score_table.find(i->getDepts()) != end(score_table)
                 && i->getScore() < score_table.at(i->getDepts())) {
             i = q.erase(i);
@@ -160,7 +160,7 @@ void Arrange::pdpSelect(std::list<Node> &q, std::vector<int> &result, int &score
     score = 0;
     while (!q.empty()) {
         Node node = q.front();
-        q.erase(begin(q));
+        q.pop_front();
         if (score < node.getScore()) {
             score = node.getScore();
             result = node.getHistory();

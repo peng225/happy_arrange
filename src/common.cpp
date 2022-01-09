@@ -48,7 +48,7 @@ double computeDistance(const std::vector<int> &a, const std::vector<int> &b) {
 }
 
 void showVector(const std::vector<int> &v) {
-    for (std::vector<int>::const_iterator i = begin(v); i != end(v); i++) {
+    for (auto i = cbegin(v); i != cend(v); i++) {
         std::cout << *i;
         if (distance(i, end(v)) != 1) {
             std::cout << ", ";
