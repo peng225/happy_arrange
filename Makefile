@@ -54,9 +54,10 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(INCLUDE) -o $@ $^ $(FINAL_CFLAGS) $(LDLIBS)
 
-
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+$(OBJ_DIR):
 	@if [ ! -e $(OBJ_DIR) ] ; then mkdir $(OBJ_DIR) ; fi
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(OBJ_DIR)
 	$(CC) $(INCLUDE) -o $@ $< $(CFLAGS) $(LDLIBS)
 
 $(OBJ_DIR)/simple.o: $(SRC_DIR)/simple/simple.cpp
@@ -82,12 +83,14 @@ echo:
 	# echo $(TEST_OBJS)
 	echo $(OBJS_WITHOUT_MAIN)
 
+$(TEST_OBJ_DIR):
+	@if [ ! -e $(TEST_OBJ_DIR) ] ; then mkdir $(TEST_OBJ_DIR) ; fi
+
 $(TEST_TARGET): $(TEST_OBJS) $(OBJS_WITHOUT_MAIN)
 	$(CC) $(TEST_INCLUDE) $(INCLUDE) -o $@ $^ $(TEST_FINAL_CFLAGS) $(TEST_LDLIBS)
 
 
-$(TEST_OBJ_DIR)/%.o: $(TEST_SRC_DIR)/%.cpp
-	@if [ ! -e $(TEST_OBJ_DIR) ] ; then mkdir $(TEST_OBJ_DIR) ; fi
+$(TEST_OBJ_DIR)/%.o: $(TEST_SRC_DIR)/%.cpp $(TEST_OBJ_DIR)
 	$(CC) $(TEST_INCLUDE) $(INCLUDE) -o $@ $< $(TEST_CFLAGS) $(TEST_LDLIBS)
 
 clean:
